@@ -24,12 +24,12 @@ use
     ;
 
 help
-    : HELP STRING_
+    : HELP string_
     ;
 
 explain
     : (DESC | DESCRIBE | EXPLAIN)
-    (tableName (columnName | pattern)?
+    (tableName (columnRef | textString)?
     | explainType? (explainableStatement | FOR CONNECTION connectionId)
     | ANALYZE select)
     ;
@@ -47,7 +47,7 @@ showTableStatus
     ;
 
 showColumns
-    : SHOW EXTENDED? FULL? (COLUMNS | FIELDS) fromTable fromSchema? (showColumnLike | showWhereClause)?
+    : SHOW EXTENDED? FULL? COLUMNS fromTable fromSchema? (showColumnLike | showWhereClause)?
     ;
 
 showIndex
@@ -87,11 +87,23 @@ showProfileType
     ;
 
 setVariable
-    : SET variableAssign (COMMA_ variableAssign)*
+    : SET optionValueList
     ;
 
-variableAssign
-    : variable EQ_ setExprOrDefault
+optionValueList
+    : optionValueNoOptionType (COMMA_ optionValue)*
+    | optionType (internalVariableName EQ_ setExprOrDefault) (COMMA_ optionValue)*
+    ;
+
+optionValueNoOptionType
+    : internalVariableName EQ_ setExprOrDefault
+    | userVariable EQ_ expr
+    | setSystemVariable EQ_ setExprOrDefault
+    | NAMES (EQ_ expr | charsetName collateClause? | DEFAULT)
+    ;
+
+optionValue
+    : optionType internalVariableName EQ_ setExprOrDefault | optionValueNoOptionType
     ;
 
 showBinaryLogs
@@ -146,6 +158,10 @@ showEngines
     : SHOW STORAGE? ENGINES
     ;
 
+showCharset
+    : SHOW CHARSET
+    ;
+    
 showErrors
     : SHOW (COUNT LP_ ASTERISK_ RP_)? ERRORS (LIMIT (NUMBER_ COMMA_)? NUMBER_)?
     ;
@@ -163,7 +179,7 @@ showFunctionStatus
     ;
 
 showGrant
-    : SHOW GRANTS (FOR userOrRole (USING roleName (COMMA_ roleName)+)?)?
+    : SHOW GRANTS (FOR userName (USING userName (COMMA_ userName)+)?)?
     ;
 
 showMasterStatus
@@ -234,17 +250,13 @@ setCharacter
     : SET (CHARACTER SET | CHARSET) (charsetName | DEFAULT)
     ;
 
-setName
-    : SET NAMES (EQ_ expr | charsetName collateClause? | DEFAULT)
-    ;
-
 clone
     : CLONE cloneAction
     ;
 
 cloneAction
     : LOCAL DATA DIRECTORY EQ_? cloneDir
-    | INSTANCE FROM cloneInstance IDENTIFIED BY STRING_ (DATA DIRECTORY EQ_? cloneDir)? (REQUIRE NO? SSL)?
+    | INSTANCE FROM cloneInstance IDENTIFIED BY string_ (DATA DIRECTORY EQ_? cloneDir)? (REQUIRE NO? SSL)?
     ;
 
 createUdf
@@ -330,7 +342,7 @@ binlog
     ;
 
 cacheIndex
-    : CACHE INDEX (tableIndexList (COMMA_ tableIndexList)* | tableName PARTITION LP_ partitionList RP_) IN IDENTIFIER_
+    : CACHE INDEX (tableIndexList (COMMA_ tableIndexList)* | tableName PARTITION LP_ partitionList RP_) IN (identifier | DEFAULT)
     ;
 
 tableIndexList
@@ -374,7 +386,7 @@ resetOption
     ;
 
 resetPersist
-    : RESET PERSIST (existClause? IDENTIFIER_)
+    : RESET PERSIST (existClause? identifier)?
     ;
 
 restart
@@ -417,6 +429,7 @@ show
     | showCreateView
     | showEngine
     | showEngines
+    | showCharset
     | showErrors
     | showEvents
     | showFunctionCode

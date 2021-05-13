@@ -30,6 +30,7 @@
         <module>example-core</module>
         <module>shardingsphere-jdbc-example</module>
         <module>shardingsphere-proxy-example</module>
+        <module>shardingsphere-parser-example</module>
     </modules>
     
     <properties>
@@ -84,6 +85,11 @@
             <dependency>
                 <groupId>org.apache.shardingsphere</groupId>
                 <artifactId>shardingsphere-encrypt-common</artifactId>
+                <version>${shardingsphere.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.shardingsphere</groupId>
+                <artifactId>shardingsphere-encrypt-api</artifactId>
                 <version>${shardingsphere.version}</version>
             </dependency>
             <dependency>

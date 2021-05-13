@@ -17,10 +17,12 @@
 
 package org.apache.shardingsphere.sql.parser.postgresql.visitor.statement.impl;
 
-import org.apache.shardingsphere.sql.parser.api.visitor.operation.SQLStatementVisitor;
+import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.sql.parser.api.visitor.ASTNode;
+import org.apache.shardingsphere.sql.parser.api.visitor.operation.SQLStatementVisitor;
 import org.apache.shardingsphere.sql.parser.api.visitor.type.DALSQLVisitor;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.AnalyzeContext;
+import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.VacuumContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.ConfigurationParameterClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.ResetParameterContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.SetContext;
@@ -31,14 +33,21 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal.PostgreSQLResetParameterStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal.PostgreSQLSetStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal.PostgreSQLShowStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal.PostgreSQLVacuumStatement;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Properties;
 
 /**
  * DAL Statement SQL visitor for PostgreSQL.
  */
+@NoArgsConstructor
 public final class PostgreSQLDALStatementSQLVisitor extends PostgreSQLStatementSQLVisitor implements DALSQLVisitor, SQLStatementVisitor {
+    
+    public PostgreSQLDALStatementSQLVisitor(final Properties props) {
+        super(props);
+    }
     
     @Override
     public ASTNode visitShow(final ShowContext ctx) {
@@ -87,5 +96,10 @@ public final class PostgreSQLDALStatementSQLVisitor extends PostgreSQLStatementS
     @Override
     public ASTNode visitAnalyze(final AnalyzeContext ctx) {
         return new PostgreSQLAnalyzeTableStatement();
+    }
+    
+    @Override 
+    public ASTNode visitVacuum(final VacuumContext ctx) {
+        return new PostgreSQLVacuumStatement(); 
     }
 }

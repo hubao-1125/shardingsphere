@@ -25,6 +25,7 @@ execute
     | update
     | delete
     | replace
+    | binlog
     | createTable
     | alterStatement
     | repairTable
@@ -102,7 +103,6 @@ execute
     | doStatement
     | show
     | setVariable
-    | setName
     | setCharacter
     | call
     | change
@@ -117,4 +117,5 @@ execute
     | unlock
     | xa
     ) (SEMI_ EOF? | EOF)
+    | EOF
     ;

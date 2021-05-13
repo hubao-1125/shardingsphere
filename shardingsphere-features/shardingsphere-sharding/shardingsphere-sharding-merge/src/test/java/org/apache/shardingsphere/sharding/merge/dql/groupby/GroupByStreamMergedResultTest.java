@@ -114,7 +114,7 @@ public final class GroupByStreamMergedResultTest {
         when(queryResult1.getValue(6, Object.class)).thenReturn(20);
         QueryResult queryResult2 = mockQueryResult();
         when(queryResult2.next()).thenReturn(true, true, true, false);
-        when(queryResult2.getValue(1, Object.class)).thenReturn(20, 30, 30, 40);
+        when(queryResult2.getValue(1, Object.class)).thenReturn(20, 30, 40);
         when(queryResult2.getValue(2, Object.class)).thenReturn(0);
         when(queryResult2.getValue(3, Object.class)).thenReturn(2, 2, 3, 3, 3, 4);
         when(queryResult2.getValue(5, Object.class)).thenReturn(2, 2, 3, 3, 3, 4);
@@ -179,9 +179,9 @@ public final class GroupByStreamMergedResultTest {
     }
     
     private ShardingSphereSchema buildSchema() {
-        ColumnMetaData columnMetaData1 = new ColumnMetaData("col1", 0, "dataType", false, false, false);
-        ColumnMetaData columnMetaData2 = new ColumnMetaData("col2", 0, "dataType", false, false, false);
-        ColumnMetaData columnMetaData3 = new ColumnMetaData("col3", 0, "dataType", false, false, false);
+        ColumnMetaData columnMetaData1 = new ColumnMetaData("col1", 0, false, false, false);
+        ColumnMetaData columnMetaData2 = new ColumnMetaData("col2", 0, false, false, false);
+        ColumnMetaData columnMetaData3 = new ColumnMetaData("col3", 0, false, false, false);
         TableMetaData tableMetaData = new TableMetaData(Arrays.asList(columnMetaData1, columnMetaData2, columnMetaData3), Collections.emptyList());
         return new ShardingSphereSchema(ImmutableMap.of("tbl", tableMetaData));
     }

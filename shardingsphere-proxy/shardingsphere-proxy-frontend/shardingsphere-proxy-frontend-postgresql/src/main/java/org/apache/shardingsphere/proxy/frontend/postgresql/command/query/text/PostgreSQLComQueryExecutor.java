@@ -54,7 +54,7 @@ public final class PostgreSQLComQueryExecutor implements QueryCommandExecutor {
     @Getter
     private volatile ResponseType responseType;
     
-    public PostgreSQLComQueryExecutor(final PostgreSQLComQueryPacket comQueryPacket, final BackendConnection backendConnection) {
+    public PostgreSQLComQueryExecutor(final PostgreSQLComQueryPacket comQueryPacket, final BackendConnection backendConnection) throws SQLException {
         textProtocolBackendHandler = TextProtocolBackendHandlerFactory.newInstance(DatabaseTypeRegistry.getActualDatabaseType("PostgreSQL"), comQueryPacket.getSql(), backendConnection);
     }
     
@@ -72,11 +72,9 @@ public final class PostgreSQLComQueryExecutor implements QueryCommandExecutor {
     private Optional<PostgreSQLRowDescriptionPacket> createQueryPacket(final QueryResponseHeader queryResponseHeader) {
         Collection<PostgreSQLColumnDescription> columnDescriptions = createColumnDescriptions(queryResponseHeader);
         if (columnDescriptions.isEmpty()) {
-            responseType = ResponseType.QUERY;
-        }
-        if (columnDescriptions.isEmpty()) {
             return Optional.empty();
         }
+        responseType = ResponseType.QUERY;
         return Optional.of(new PostgreSQLRowDescriptionPacket(columnDescriptions.size(), columnDescriptions));
     }
     

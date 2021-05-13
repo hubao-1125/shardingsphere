@@ -17,8 +17,8 @@
 
 package org.apache.shardingsphere.proxy.frontend.postgresql.command.query;
 
-import org.apache.shardingsphere.distsql.parser.statement.rdl.CreateDataSourcesStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.CreateShardingRuleStatement;
+import org.apache.shardingsphere.distsql.parser.statement.rdl.create.impl.AddResourceStatement;
+import org.apache.shardingsphere.distsql.parser.statement.rdl.create.impl.CreateShardingTableRuleStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateDatabaseStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropDatabaseStatement;
@@ -32,52 +32,44 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public final class PostgreSQLCommandTest {
-
+    
     @Test
     public void assertPostgreSQLCommandWhenSQLStatementInstanceOfUnEnumeration() {
-        PostgreSQLCommand postgreSQLCommand = new PostgreSQLCommand(mock(SQLStatement.class));
-        assertThat(postgreSQLCommand.getSQLCommand(), is(""));
+        assertThat(new PostgreSQLCommand(mock(SQLStatement.class)).getSQLCommand(), is(""));
     }
-
+    
     @Test
     public void assertPostgreSQLCommandWhenSQLStatementInstanceOfInsertStatement() {
-        PostgreSQLCommand postgreSQLCommand = new PostgreSQLCommand(mock(InsertStatement.class));
-        assertThat(postgreSQLCommand.getSQLCommand(), is("INSERT"));
+        assertThat(new PostgreSQLCommand(mock(InsertStatement.class)).getSQLCommand(), is("INSERT"));
     }
-
+    
     @Test
     public void assertPostgreSQLCommandWhenSQLStatementInstanceOfDeleteStatement() {
-        PostgreSQLCommand postgreSQLCommand = new PostgreSQLCommand(mock(DeleteStatement.class));
-        assertThat(postgreSQLCommand.getSQLCommand(), is("DELETE"));
+        assertThat(new PostgreSQLCommand(mock(DeleteStatement.class)).getSQLCommand(), is("DELETE"));
     }
-
+    
     @Test
     public void assertPostgreSQLCommandWhenSQLStatementInstanceOfUpdateStatement() {
-        PostgreSQLCommand postgreSQLCommand = new PostgreSQLCommand(mock(UpdateStatement.class));
-        assertThat(postgreSQLCommand.getSQLCommand(), is("UPDATE"));
+        assertThat(new PostgreSQLCommand(mock(UpdateStatement.class)).getSQLCommand(), is("UPDATE"));
     }
-
+    
     @Test
     public void assertPostgreSQLCommandWhenSQLStatementInstanceOfDropDatabaseStatement() {
-        PostgreSQLCommand postgreSQLCommand = new PostgreSQLCommand(mock(DropDatabaseStatement.class));
-        assertThat(postgreSQLCommand.getSQLCommand(), is("DROP"));
+        assertThat(new PostgreSQLCommand(mock(DropDatabaseStatement.class)).getSQLCommand(), is("DROP"));
     }
-
+    
     @Test
     public void assertPostgreSQLCommandWhenSQLStatementInstanceOfCreateDatabaseStatement() {
-        PostgreSQLCommand postgreSQLCommand = new PostgreSQLCommand(mock(CreateDatabaseStatement.class));
-        assertThat(postgreSQLCommand.getSQLCommand(), is("CREATE"));
+        assertThat(new PostgreSQLCommand(mock(CreateDatabaseStatement.class)).getSQLCommand(), is("CREATE"));
     }
-
+    
     @Test
     public void assertPostgreSQLCommandWhenSQLStatementInstanceOfCreateDataSourcesStatement() {
-        PostgreSQLCommand postgreSQLCommand = new PostgreSQLCommand(mock(CreateDataSourcesStatement.class));
-        assertThat(postgreSQLCommand.getSQLCommand(), is("CREATE"));
+        assertThat(new PostgreSQLCommand(mock(AddResourceStatement.class)).getSQLCommand(), is("CREATE"));
     }
-
+    
     @Test
-    public void assertPostgreSQLCommandWhenSQLStatementInstanceOfCreateShardingRuleStatement() {
-        PostgreSQLCommand postgreSQLCommand = new PostgreSQLCommand(mock(CreateShardingRuleStatement.class));
-        assertThat(postgreSQLCommand.getSQLCommand(), is("CREATE"));
+    public void assertPostgreSQLCommandWhenSQLStatementInstanceOfCreateShardingTableRuleStatement() {
+        assertThat(new PostgreSQLCommand(mock(CreateShardingTableRuleStatement.class)).getSQLCommand(), is("CREATE"));
     }
 }

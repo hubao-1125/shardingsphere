@@ -19,6 +19,7 @@ package org.apache.shardingsphere.sql.parser.sqlserver.visitor.statement.impl;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -98,14 +99,19 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.sqlserver.dml.
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Statement SQL SQLServer visitor.
  */
+@NoArgsConstructor
 @Getter(AccessLevel.PROTECTED)
 public abstract class SQLServerStatementSQLVisitor extends SQLServerStatementBaseVisitor<ASTNode> {
     
     private int currentParameterIndex;
+    
+    public SQLServerStatementSQLVisitor(final Properties props) {
+    }
     
     @Override
     public final ASTNode visitParameterMarker(final ParameterMarkerContext ctx) {
@@ -368,14 +374,16 @@ public abstract class SQLServerStatementSQLVisitor extends SQLServerStatementBas
     
     @Override
     public final ASTNode visitSimpleExpr(final SimpleExprContext ctx) {
+        int startIndex = ctx.getStart().getStartIndex();
+        int stopIndex = ctx.getStop().getStopIndex();
         if (null != ctx.subquery()) {
-            return new SubquerySegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (SQLServerSelectStatement) visit(ctx.subquery()));
+            return new SubquerySegment(startIndex, stopIndex, (SQLServerSelectStatement) visit(ctx.subquery()));
         }
         if (null != ctx.parameterMarker()) {
-            return visit(ctx.parameterMarker());
+            return new ParameterMarkerExpressionSegment(startIndex, stopIndex, ((ParameterMarkerValue) visit(ctx.parameterMarker())).getValue());
         }
         if (null != ctx.literals()) {
-            return visit(ctx.literals());
+            return SQLUtil.createLiteralExpression(visit(ctx.literals()), startIndex, stopIndex, ctx.literals().start.getInputStream().getText(new Interval(startIndex, stopIndex)));
         }
         if (null != ctx.functionCall()) {
             return visit(ctx.functionCall());
@@ -463,7 +471,8 @@ public abstract class SQLServerStatementSQLVisitor extends SQLServerStatementBas
     @Override
     public final ASTNode visitRegularFunction(final RegularFunctionContext ctx) {
         calculateParameterCount(ctx.expr());
-        return new ExpressionProjectionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getText());
+        String text = ctx.start.getInputStream().getText(new Interval(ctx.start.getStartIndex(), ctx.stop.getStopIndex()));
+        return new ExpressionProjectionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), text);
     }
     
     @Override

@@ -19,19 +19,68 @@ package org.apache.shardingsphere.governance.core.lock.node;
 
 import com.google.common.base.Joiner;
 
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Lock node.
  */
 public final class LockNode {
     
-    private static final String GLOBAL_LOCK_NODE = "glock";
+    private static final String LOCK_NODE_ROOT = "lock";
+    
+    private static final String LOCKS_NODE = "locks";
+    
+    private static final String LOCKED_ACK_NODE = "ack";
     
     /**
-     * Get global lock node path.
+     * Get lock root node path.
      * 
-     * @return global lock node path
+     * @return lock root node path
      */
-    public String getGlobalLockNodePath() {
-        return Joiner.on("/").join("", GLOBAL_LOCK_NODE);
+    public String getLockRootNodePath() {
+        return Joiner.on("/").join("", LOCK_NODE_ROOT, LOCKS_NODE);
+    }
+    
+    /**
+     * Get lock node path.
+     * 
+     * @param lockName lock name
+     * @return lock node path
+     */
+    public String getLockNodePath(final String lockName) {
+        return Joiner.on("/").join("", LOCK_NODE_ROOT, LOCKS_NODE, lockName);
+    }
+    
+    /**
+     * Get locked ack root node path.
+     * 
+     * @return locked ack root node path
+     */
+    public String getLockedAckRootNodePah() {
+        return Joiner.on("/").join("", LOCK_NODE_ROOT, LOCKED_ACK_NODE);
+    }
+    
+    /**
+     * Get locked ack node path.
+     * 
+     * @param ackLockName ack lock name
+     * @return locked ack node path
+     */
+    public String getLockedAckNodePath(final String ackLockName) {
+        return Joiner.on("/").join("", LOCK_NODE_ROOT, LOCKED_ACK_NODE, ackLockName);
+    }
+    
+    /**
+     * Get lock name by lock node path.
+     * 
+     * @param lockNodePath lock node path
+     * @return lock name
+     */
+    public Optional<String> getLockName(final String lockNodePath) {
+        Pattern pattern = Pattern.compile(getLockRootNodePath() + "/" + "(.+)/(.+)$", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(lockNodePath);
+        return matcher.find() ? Optional.of(matcher.group(1)) : Optional.empty();
     }
 }

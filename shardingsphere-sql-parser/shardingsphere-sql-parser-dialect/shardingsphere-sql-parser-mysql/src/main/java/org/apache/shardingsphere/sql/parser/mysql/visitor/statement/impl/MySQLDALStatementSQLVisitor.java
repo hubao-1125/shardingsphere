@@ -17,8 +17,9 @@
 
 package org.apache.shardingsphere.sql.parser.mysql.visitor.statement.impl;
 
-import org.apache.shardingsphere.sql.parser.api.visitor.operation.SQLStatementVisitor;
+import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.sql.parser.api.visitor.ASTNode;
+import org.apache.shardingsphere.sql.parser.api.visitor.operation.SQLStatementVisitor;
 import org.apache.shardingsphere.sql.parser.api.visitor.type.DALSQLVisitor;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AnalyzeTableContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CacheIndexContext;
@@ -31,15 +32,18 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.Install
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.KillContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.LoadIndexInfoContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.OptimizeTableContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.OptionValueContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.OptionValueListContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.OptionValueNoOptionTypeContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.RepairTableContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ResetStatementContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.SchemaNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.SetCharacterContext;
-import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.SetNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.SetVariableContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowBinaryLogsContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowBinlogEventsContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowCharacterSetContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowCharsetContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowCollationContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowColumnsContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowCreateEventContext;
@@ -48,17 +52,21 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowCre
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowCreateTableContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowCreateViewContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowDatabasesContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowEngineContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowEnginesContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowErrorsContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowIndexContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowLikeContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowProcesslistContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowStatusContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowTableStatusContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowTablesContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowVariablesContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ShowWarningsContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.SystemVariableContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.UninstallPluginContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.UseContext;
-import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.VariableAssignContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.UserVariableContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.VariableContext;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.FromSchemaSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.FromTableSegment;
@@ -93,6 +101,7 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQ
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowErrorsStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowIndexStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowOtherStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowProcessListStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowStatusStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowTableStatusStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowTablesStatement;
@@ -102,14 +111,20 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQ
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Properties;
 
 /**
  * DAL Statement SQL visitor for MySQL.
  */
+@NoArgsConstructor
 public final class MySQLDALStatementSQLVisitor extends MySQLStatementSQLVisitor implements DALSQLVisitor, SQLStatementVisitor {
     
+    public MySQLDALStatementSQLVisitor(final Properties props) {
+        super(props);
+    }
+    
     @Override
-    public ASTNode visitUninstallPlugin(final UninstallPluginContext ctx) {
+    public ASTNode visitUninstallPlugin(final UninstallPluginContext ctx) { 
         return new MySQLUninstallPluginStatement();
     }
     
@@ -126,6 +141,21 @@ public final class MySQLDALStatementSQLVisitor extends MySQLStatementSQLVisitor 
     @Override
     public ASTNode visitShowCreateView(final ShowCreateViewContext ctx) {
         return new MySQLShowCreateViewStatement();
+    }
+    
+    @Override
+    public ASTNode visitShowEngines(final ShowEnginesContext ctx) {
+        return new MySQLShowOtherStatement();
+    }
+    
+    @Override
+    public ASTNode visitShowEngine(final ShowEngineContext ctx) {
+        return new MySQLShowOtherStatement();
+    }
+    
+    @Override
+    public ASTNode visitShowCharset(final ShowCharsetContext ctx) {
+        return new MySQLShowOtherStatement();
     }
     
     @Override
@@ -284,46 +314,97 @@ public final class MySQLDALStatementSQLVisitor extends MySQLStatementSQLVisitor 
         result.setTable((SimpleTableSegment) visit(ctx.tableName()));
         return result;
     }
-
+    
     @Override
     public ASTNode visitShowVariables(final ShowVariablesContext ctx) {
         return new MySQLShowOtherStatement();
     }
-
+    
     @Override
     public ASTNode visitShowCharacterSet(final ShowCharacterSetContext ctx) {
         return new MySQLShowOtherStatement();
     }
-
+    
     @Override
     public ASTNode visitShowCollation(final ShowCollationContext ctx) {
         return new MySQLShowOtherStatement();
     }
-
+    
+    @Override
+    public ASTNode visitShowProcesslist(final ShowProcesslistContext ctx) {
+        return new MySQLShowProcessListStatement();
+    }
+    
     @Override
     public ASTNode visitSetVariable(final SetVariableContext ctx) {
         MySQLSetStatement result = new MySQLSetStatement();
-        Collection<VariableAssignSegment> variableAssigns = new LinkedList<>();
-        for (VariableAssignContext each : ctx.variableAssign()) {
-            variableAssigns.add((VariableAssignSegment) visit(each));
-        }
+        Collection<VariableAssignSegment> variableAssigns = getVariableAssigns(ctx.optionValueList());
         result.getVariableAssigns().addAll(variableAssigns);
         return result;
     }
-    
-    @Override
-    public ASTNode visitSetName(final SetNameContext ctx) {
-        VariableAssignSegment characterSet = new VariableAssignSegment();
-        VariableSegment variable = new VariableSegment();
-        variable.setVariable("charset");
-        characterSet.setVariable(variable);
-        String assignValue = ctx.charsetName().getText();
-        characterSet.setAssignValue(assignValue);
-        MySQLSetStatement result = new MySQLSetStatement();
-        result.getVariableAssigns().add(characterSet);
+
+    private Collection<VariableAssignSegment> getVariableAssigns(final OptionValueListContext ctx) {
+        Collection<VariableAssignSegment> result = new LinkedList<>();
+        if (null != ctx.optionValueNoOptionType()) {
+            result.add(getVariableAssign(ctx.optionValueNoOptionType()));
+        } else {
+            VariableAssignSegment variableAssign = new VariableAssignSegment();
+            variableAssign.setStartIndex(ctx.start.getStartIndex());
+            variableAssign.setStopIndex(ctx.setExprOrDefault().stop.getStopIndex());
+            VariableSegment variable = new VariableSegment();
+            variable.setScope(ctx.optionType().getText());
+            variable.setVariable(ctx.internalVariableName().getText());
+            variableAssign.setVariable(variable);
+            variableAssign.setAssignValue(ctx.setExprOrDefault().getText());
+            result.add(variableAssign);
+        }
+        for (OptionValueContext each : ctx.optionValue()) {
+            result.add(getVariableAssign(each));
+        }
         return result;
     }
-    
+
+    private VariableAssignSegment getVariableAssign(final OptionValueNoOptionTypeContext ctx) {
+        VariableAssignSegment result = new VariableAssignSegment();
+        result.setStartIndex(ctx.start.getStartIndex());
+        result.setStopIndex(ctx.stop.getStopIndex());
+        VariableSegment variable = new VariableSegment();
+        if (null != ctx.NAMES()) {
+            variable.setVariable("charset");
+            result.setVariable(variable);
+            result.setAssignValue(ctx.charsetName().getText());
+        } else if (null != ctx.internalVariableName()) {
+            variable.setVariable(ctx.internalVariableName().getText());
+            result.setVariable(variable);
+            result.setAssignValue(ctx.setExprOrDefault().getText());
+        } else if (null != ctx.userVariable()) {
+            variable.setVariable(ctx.userVariable().getText());
+            result.setVariable(variable);
+            result.setAssignValue(ctx.expr().getText());
+        } else if (null != ctx.setSystemVariable()) {
+            variable.setVariable(ctx.setSystemVariable().getText());
+            result.setVariable(variable);
+            result.setAssignValue(ctx.setExprOrDefault().getText());
+        }
+        return result;
+    }
+
+    private VariableAssignSegment getVariableAssign(final OptionValueContext ctx) {
+        VariableAssignSegment result = new VariableAssignSegment();
+        result.setStartIndex(ctx.start.getStartIndex());
+        result.setStopIndex(ctx.stop.getStopIndex());
+        VariableSegment variable = new VariableSegment();
+        if (null != ctx.optionValueNoOptionType()) {
+            return getVariableAssign(ctx.optionValueNoOptionType());
+        } else {
+            variable.setScope(ctx.optionType().getText());
+            variable.setVariable(ctx.internalVariableName().getText());
+            result.setVariable(variable);
+            result.setAssignValue(ctx.setExprOrDefault().getText());
+        }
+        return result;
+    }
+
     @Override
     public ASTNode visitSetCharacter(final SetCharacterContext ctx) {
         MySQLSetStatement result = new MySQLSetStatement();
@@ -337,27 +418,29 @@ public final class MySQLDALStatementSQLVisitor extends MySQLStatementSQLVisitor 
     }
     
     @Override
-    public ASTNode visitVariableAssign(final VariableAssignContext ctx) {
-        VariableAssignSegment result = new VariableAssignSegment();
+    public ASTNode visitVariable(final VariableContext ctx) {
+        return super.visitVariable(ctx);
+    }
+
+    @Override
+    public ASTNode visitUserVariable(final UserVariableContext ctx) {
+        VariableSegment result = new VariableSegment();
         result.setStartIndex(ctx.start.getStartIndex());
         result.setStopIndex(ctx.stop.getStopIndex());
-        result.setVariable((VariableSegment) visit(ctx.variable()));
-        result.setAssignValue(ctx.setExprOrDefault().getText());
+        result.setVariable(ctx.textOrIdentifier().getText());
         return result;
     }
     
     @Override
-    public ASTNode visitVariable(final VariableContext ctx) {
+    public ASTNode visitSystemVariable(final SystemVariableContext ctx) {
         VariableSegment result = new VariableSegment();
+        result.setScope(ctx.systemVariableScope.getText());
         result.setStartIndex(ctx.start.getStartIndex());
         result.setStopIndex(ctx.stop.getStopIndex());
-        if (null != ctx.scope()) {
-            result.setScope(ctx.scope().getText());
-        }
-        result.setVariable(ctx.internalVariableName().getText());
+        result.setVariable(ctx.textOrIdentifier().getText());
         return result;
     }
-
+    
     @Override
     public ASTNode visitFromSchema(final FromSchemaContext ctx) {
         return new FromSchemaSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex());

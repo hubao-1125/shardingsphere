@@ -45,6 +45,7 @@ import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.rule.builder.ShardingSphereRulesBuilder;
 import org.apache.shardingsphere.infra.yaml.config.YamlRootRuleConfigurations;
 import org.apache.shardingsphere.infra.yaml.engine.YamlEngine;
+import org.apache.shardingsphere.infra.yaml.swapper.YamlDataSourceConfigurationSwapper;
 import org.apache.shardingsphere.infra.yaml.swapper.YamlRuleConfigurationSwapperEngine;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -79,8 +80,9 @@ public final class MixSQLRewriterParameterizedTest extends AbstractSQLRewriterPa
     protected Collection<SQLRewriteUnit> createSQLRewriteUnits() throws IOException {
         YamlRootRuleConfigurations ruleConfigurations = createRuleConfigurations();
         String databaseType = null == getTestParameters().getDatabaseType() ? "MySQL" : getTestParameters().getDatabaseType();
-        Collection<ShardingSphereRule> rules = ShardingSphereRulesBuilder.build(new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(
-                ruleConfigurations.getRules()), DatabaseTypeRegistry.getTrunkDatabaseType(databaseType), ruleConfigurations.getDataSources());
+        Collection<ShardingSphereRule> rules = ShardingSphereRulesBuilder.buildSchemaRules("schema_name", new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(
+                ruleConfigurations.getRules()), DatabaseTypeRegistry.getTrunkDatabaseType(databaseType),
+                new YamlDataSourceConfigurationSwapper().swapToDataSources(ruleConfigurations.getDataSources()));
         SQLStatementParserEngine sqlStatementParserEngine = new SQLStatementParserEngine(databaseType);
         ShardingSphereSchema schema = mockSchema();
         ConfigurationProperties props = new ConfigurationProperties(ruleConfigurations.getProps());
@@ -123,7 +125,7 @@ public final class MixSQLRewriterParameterizedTest extends AbstractSQLRewriterPa
     
     private Map<String, ColumnMetaData> createColumnMetaDataMap() {
         Map<String, ColumnMetaData> result = new LinkedHashMap<>(4, 1);
-        result.put("account_id", new ColumnMetaData("account_id", Types.INTEGER, "INT", true, true, false));
+        result.put("account_id", new ColumnMetaData("account_id", Types.INTEGER, true, true, false));
         result.put("password", mock(ColumnMetaData.class));
         result.put("amount", mock(ColumnMetaData.class));
         result.put("status", mock(ColumnMetaData.class));

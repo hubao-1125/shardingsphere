@@ -13,135 +13,110 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.apache.shardingsphere.agent.core.plugin;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.matcher.ElementMatcher;
-import net.bytebuddy.matcher.ElementMatchers;
+import net.bytebuddy.matcher.ElementMatcher.Junction;
+import org.apache.shardingsphere.agent.api.point.PluginInterceptorPoint;
+import org.apache.shardingsphere.agent.config.AgentConfiguration;
+import org.apache.shardingsphere.agent.core.config.path.AgentPathBuilder;
+import org.apache.shardingsphere.agent.core.config.registry.AgentConfigurationRegistry;
+import org.apache.shardingsphere.agent.core.spi.PluginServiceLoader;
+import org.apache.shardingsphere.agent.spi.definition.AbstractPluginDefinitionService;
+import org.apache.shardingsphere.agent.spi.definition.PluginDefinitionService;
 
-import org.apache.shardingsphere.agent.core.common.AgentPathLocator;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
 /**
- * Plugins loader.
+ * Plugin loader.
  */
 @Slf4j
 public final class PluginLoader extends ClassLoader implements Closeable {
     
-    private static final PluginLoader INSTANCE = new PluginLoader();
+    static {
+        registerAsParallelCapable();
+    }
+    
+    private static volatile PluginLoader pluginLoader;
     
     private final ConcurrentHashMap<String, Object> objectPool = new ConcurrentHashMap<>();
     
     private final ReentrantLock lock = new ReentrantLock();
     
-    private final List<JarFile> jars = Lists.newArrayList();
+    private final List<PluginJar> jars = Lists.newArrayList();
     
-    private final List<Service> services = Lists.newArrayList();
-    
-    private Map<String, PluginAdviceDefinition> pluginDefineMap;
+    private Map<String, PluginInterceptorPoint> interceptorPointMap;
     
     private PluginLoader() {
-        try {
-            pluginDefineMap = loadAllPlugins();
-        } catch (IOException ioe) {
-            log.error("Failed to load plugins.");
-        }
-    }
-    
-    @Override
-    protected Class<?> findClass(final String name) throws ClassNotFoundException {
-        String path = classNameToPath(name);
-        for (JarFile jar : jars) {
-            ZipEntry entry = jar.getEntry(path);
-            if (Objects.nonNull(entry)) {
-                try {
-                    byte[] data = ByteStreams.toByteArray(jar.getInputStream(entry));
-                    return defineClass(name, data, 0, data.length);
-                } catch (IOException ioe) {
-                    log.error("Failed to load class {}.", name, ioe);
-                }
-            }
-        }
-        throw new ClassNotFoundException("Class " + name + " not found.");
-    }
-    
-    @Override
-    public void close() {
-        for (JarFile jar : jars) {
-            try {
-                jar.close();
-            } catch (IOException ioe) {
-                log.error("", ioe);
-            }
-        }
+        super(PluginLoader.class.getClassLoader());
     }
     
     /**
-     * To get plugin loader instance.
+     * Get plugin loader instance.
      *
-     * @return plugin loader
+     * @return plugin loader instance
      */
     public static PluginLoader getInstance() {
-        return INSTANCE;
-    }
-    
-    private Map<String, PluginAdviceDefinition> loadAllPlugins() throws IOException {
-        File[] jarFiles = AgentPathLocator.getAgentPath().listFiles(file -> file.getName().endsWith(".jar"));
-        ImmutableMap.Builder<String, PluginAdviceDefinition> pluginDefineMap = ImmutableMap.builder();
-        if (jarFiles == null) {
-            return pluginDefineMap.build();
-        }
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        for (File jarFile : jarFiles) {
-            outputStream.reset();
-            JarFile jar = new JarFile(jarFile, true);
-            jars.add(jar);
-            Attributes attributes = jar.getManifest().getMainAttributes();
-            String entrypoint = attributes.getValue("Entrypoint");
-            if (Strings.isNullOrEmpty(entrypoint)) {
-                log.warn("Entrypoint is not setting in {}.", jarFile.getName());
-                continue;
-            }
-            ByteStreams.copy(jar.getInputStream(jar.getEntry(classNameToPath(entrypoint))), outputStream);
-            try {
-                PluginDefinition pluginDefinition = (PluginDefinition) defineClass(entrypoint, outputStream.toByteArray(), 0, outputStream.size()).newInstance();
-                pluginDefinition.getAllServices().forEach(klass -> {
-                    try {
-                        services.add(klass.newInstance());
-                    } catch (InstantiationException | IllegalAccessException e) {
-                        log.error("Failed to create service instance, {}.", klass.getTypeName(), e);
-                    }
-                });
-                pluginDefinition.build().forEach(plugin -> pluginDefineMap.put(plugin.getClassNameOfTarget(), plugin));
-            } catch (InstantiationException | IllegalAccessException e) {
-                log.error("Failed to load plugin definition, {}.", entrypoint, e);
+        if (null == pluginLoader) {
+            synchronized (PluginLoader.class) {
+                if (null == pluginLoader) {
+                    pluginLoader = new PluginLoader();
+                }
             }
         }
-        return pluginDefineMap.build();
+        return pluginLoader;
     }
     
-    private String classNameToPath(final String className) {
-        return className.replace(".", "/") + ".class";
+    /**
+     * Load all plugins.
+     *
+     * @throws IOException IO exception
+     */
+    public void loadAllPlugins() throws IOException {
+        File[] jarFiles = AgentPathBuilder.getPluginPath().listFiles(file -> file.getName().endsWith(".jar"));
+        if (null == jarFiles) {
+            return;
+        }
+        Map<String, PluginInterceptorPoint> pointMap = Maps.newHashMap();
+        Set<String> ignoredPluginNames = AgentConfigurationRegistry.INSTANCE.get(AgentConfiguration.class).getIgnoredPluginNames();
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            for (File each : jarFiles) {
+                outputStream.reset();
+                JarFile jar = new JarFile(each, true);
+                jars.add(new PluginJar(jar, each));
+                log.info("Loaded jar {}.", each.getName());
+            }
+        }
+        loadPluginDefinitionServices(ignoredPluginNames, pointMap);
+        interceptorPointMap = ImmutableMap.<String, PluginInterceptorPoint>builder().putAll(pointMap).build();
     }
     
     /**
@@ -150,7 +125,23 @@ public final class PluginLoader extends ClassLoader implements Closeable {
      * @return type matcher
      */
     public ElementMatcher<? super TypeDescription> typeMatcher() {
-        return ElementMatchers.anyOf(pluginDefineMap.keySet().stream().map(ElementMatchers::named).toArray());
+        return new Junction<TypeDescription>() {
+            
+            @Override
+            public boolean matches(final TypeDescription target) {
+                return interceptorPointMap.containsKey(target.getTypeName());
+            }
+            
+            @Override
+            public <U extends TypeDescription> Junction<U> and(final ElementMatcher<? super U> other) {
+                return null;
+            }
+            
+            @Override
+            public <U extends TypeDescription> Junction<U> or(final ElementMatcher<? super U> other) {
+                return null;
+            }
+        };
     }
     
     /**
@@ -160,17 +151,17 @@ public final class PluginLoader extends ClassLoader implements Closeable {
      * @return contains when it is true
      */
     public boolean containsType(final TypeDescription typeDescription) {
-        return pluginDefineMap.containsKey(typeDescription.getTypeName());
+        return interceptorPointMap.containsKey(typeDescription.getTypeName());
     }
     
     /**
-     * Load the definition configuration by TypeDescription.
+     * Load plugin interceptor point by TypeDescription.
      *
      * @param typeDescription TypeDescription
-     * @return the plugin definition configurations
+     * @return plugin interceptor point
      */
-    public PluginAdviceDefinition loadPluginAdviceDefine(final TypeDescription typeDescription) {
-        return pluginDefineMap.getOrDefault(typeDescription.getTypeName(), PluginAdviceDefinition.createDefault());
+    public PluginInterceptorPoint loadPluginInterceptorPoint(final TypeDescription typeDescription) {
+        return interceptorPointMap.getOrDefault(typeDescription.getTypeName(), PluginInterceptorPoint.createDefault());
     }
     
     /**
@@ -199,48 +190,113 @@ public final class PluginLoader extends ClassLoader implements Closeable {
         }
     }
     
-    /**
-     * Initial all services.
-     */
-    public void initialAllServices() {
-        services.forEach(service -> {
+    @Override
+    protected Class<?> findClass(final String name) throws ClassNotFoundException {
+        String path = classNameToPath(name);
+        for (PluginJar each : jars) {
+            ZipEntry entry = each.jarFile.getEntry(path);
+            if (Objects.nonNull(entry)) {
+                try {
+                    int index = name.lastIndexOf('.');
+                    if (index != -1) {
+                        String packageName = name.substring(0, index);
+                        definePackageInternal(packageName, each.jarFile.getManifest());
+                    }
+                    byte[] data = ByteStreams.toByteArray(each.jarFile.getInputStream(entry));
+                    return defineClass(name, data, 0, data.length);
+                } catch (final IOException ex) {
+                    log.error("Failed to load class {}.", name, ex);
+                }
+            }
+        }
+        throw new ClassNotFoundException(String.format("Class name is %s not found.", name));
+    }
+    
+    @Override
+    protected Enumeration<URL> findResources(final String name) {
+        List<URL> resources = Lists.newArrayList();
+        for (PluginJar each : jars) {
+            JarEntry entry = each.jarFile.getJarEntry(name);
+            if (Objects.nonNull(entry)) {
+                try {
+                    resources.add(new URL(String.format("jar:file:%s!/%s", each.sourcePath.getAbsolutePath(), name)));
+                } catch (final MalformedURLException ignored) {
+                }
+            }
+        }
+        return Collections.enumeration(resources);
+    }
+    
+    @Override
+    protected URL findResource(final String name) {
+        for (PluginJar each : jars) {
+            JarEntry entry = each.jarFile.getJarEntry(name);
+            if (Objects.nonNull(entry)) {
+                try {
+                    return new URL(String.format("jar:file:%s!/%s", each.sourcePath.getAbsolutePath(), name));
+                } catch (final MalformedURLException ignored) {
+                }
+            }
+        }
+        return null;
+    }
+    
+    @Override
+    public void close() {
+        for (PluginJar each : jars) {
             try {
-                service.setup();
-                // CHECKSTYLE:OFF
-            } catch (Exception e) {
-                // CHECKSTYLE:ON
-                log.error("Failed to initial service.");
+                each.jarFile.close();
+            } catch (final IOException ex) {
+                log.error("close is ", ex);
+            }
+        }
+    }
+    
+    private void loadPluginDefinitionServices(final Set<String> ignoredPluginNames, final Map<String, PluginInterceptorPoint> pointMap) {
+        PluginServiceLoader.newServiceInstances(PluginDefinitionService.class)
+                .stream()
+                .filter(each -> ignoredPluginNames.isEmpty() || !ignoredPluginNames.contains(each.getType()))
+                .forEach(each -> buildPluginInterceptorPointMap(each, pointMap));
+    }
+    
+    private String classNameToPath(final String className) {
+        return String.join("", className.replace(".", "/"), ".class");
+    }
+    
+    private void definePackageInternal(final String packageName, final Manifest manifest) {
+        if (null != getPackage(packageName)) {
+            return;
+        }
+        Attributes attributes = manifest.getMainAttributes();
+        String specTitle = attributes.getValue(Attributes.Name.SPECIFICATION_TITLE);
+        String specVersion = attributes.getValue(Attributes.Name.SPECIFICATION_VERSION);
+        String specVendor = attributes.getValue(Attributes.Name.SPECIFICATION_VENDOR);
+        String implTitle = attributes.getValue(Attributes.Name.IMPLEMENTATION_TITLE);
+        String implVersion = attributes.getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+        String implVendor = attributes.getValue(Attributes.Name.IMPLEMENTATION_VENDOR);
+        definePackage(packageName, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, null);
+    }
+    
+    private void buildPluginInterceptorPointMap(final PluginDefinitionService pluginDefinitionService, final Map<String, PluginInterceptorPoint> pointMap) {
+        AbstractPluginDefinitionService definitionService = (AbstractPluginDefinitionService) pluginDefinitionService;
+        definitionService.install().forEach(each -> {
+            String target = each.getClassNameOfTarget();
+            if (pointMap.containsKey(target)) {
+                PluginInterceptorPoint pluginInterceptorPoint = pointMap.get(target);
+                pluginInterceptorPoint.getConstructorPoints().addAll(each.getConstructorPoints());
+                pluginInterceptorPoint.getInstanceMethodPoints().addAll(each.getInstanceMethodPoints());
+                pluginInterceptorPoint.getClassStaticMethodPoints().addAll(each.getClassStaticMethodPoints());
+            } else {
+                pointMap.put(target, each);
             }
         });
     }
     
-    /**
-     * Start all services.
-     */
-    public void startAllServices() {
-        services.forEach(service -> {
-            try {
-                service.start();
-                // CHECKSTYLE:OFF
-            } catch (Exception e) {
-                // CHECKSTYLE:ON
-                log.error("Failed to start service.");
-            }
-        });
-    }
-    
-    /**
-     * Shutdown all services.
-     */
-    public void shutdownAllServices() {
-        services.forEach(service -> {
-            try {
-                service.cleanup();
-                // CHECKSTYLE:OFF
-            } catch (Exception e) {
-                // CHECKSTYLE:ON
-                log.error("Failed to shutdown service.");
-            }
-        });
+    @RequiredArgsConstructor
+    private static class PluginJar {
+        
+        private final JarFile jarFile;
+        
+        private final File sourcePath;
     }
 }

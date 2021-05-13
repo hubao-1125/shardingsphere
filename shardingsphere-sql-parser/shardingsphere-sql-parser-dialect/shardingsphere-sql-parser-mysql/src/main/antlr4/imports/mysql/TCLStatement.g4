@@ -20,19 +20,19 @@ grammar TCLStatement;
 import Symbol, Keyword, MySQLKeyword, Literals, BaseRule;
 
 setTransaction
-    : SET scope? TRANSACTION transactionCharacteristic (COMMA_ transactionCharacteristic)*
+    : SET optionType? TRANSACTION transactionCharacteristics
     ;
 
 setAutoCommit
-    : SET (AT_? AT_)? scope? DOT_? AUTOCOMMIT EQ_ autoCommitValue
-    ;
-
-autoCommitValue
-    : NUMBER_ | ON | OFF
+    : SET (AT_? AT_)? optionType? DOT_? AUTOCOMMIT EQ_ autoCommitValue=(NUMBER_ | ON | OFF)
     ;
 
 beginTransaction
     : BEGIN | START TRANSACTION (transactionCharacteristic (COMMA_ transactionCharacteristic)*)?
+    ;
+
+transactionCharacteristic
+    : WITH CONSISTENT SNAPSHOT | transactionAccessMode
     ;
 
 commit
@@ -73,18 +73,6 @@ xa
     )
     ;
 
-transactionCharacteristic
-   : ISOLATION LEVEL level | accessMode | WITH CONSISTENT SNAPSHOT
-   ;
-
-level
-   : REPEATABLE READ | READ COMMITTED | READ UNCOMMITTED | SERIALIZABLE
-   ;
-
-accessMode
-   : READ (WRITE | ONLY)
-   ;
-
 optionChain
     : AND NO? CHAIN
     ;
@@ -102,5 +90,5 @@ lockOption
     ;
 
 xid
-    : STRING_ (COMMA_ STRING_)* numberLiterals?
+    : string_ (COMMA_ string_)* numberLiterals?
     ;

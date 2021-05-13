@@ -35,7 +35,7 @@ import org.apache.shardingsphere.proxy.frontend.command.CommandExecuteEngine;
 import org.apache.shardingsphere.proxy.frontend.command.executor.CommandExecutor;
 import org.apache.shardingsphere.proxy.frontend.command.executor.QueryCommandExecutor;
 import org.apache.shardingsphere.proxy.frontend.command.executor.ResponseType;
-import org.apache.shardingsphere.proxy.frontend.mysql.MySQLErrPacketFactory;
+import org.apache.shardingsphere.proxy.frontend.mysql.err.MySQLErrPacketFactory;
 
 import java.sql.SQLException;
 import java.util.Optional;
@@ -56,7 +56,7 @@ public final class MySQLCommandExecuteEngine implements CommandExecuteEngine {
     }
     
     @Override
-    public CommandExecutor getCommandExecutor(final CommandPacketType type, final CommandPacket packet, final BackendConnection backendConnection) {
+    public CommandExecutor getCommandExecutor(final CommandPacketType type, final CommandPacket packet, final BackendConnection backendConnection) throws SQLException {
         return MySQLCommandExecutorFactory.newInstance((MySQLCommandPacketType) type, packet, backendConnection);
     }
     
@@ -66,7 +66,7 @@ public final class MySQLCommandExecuteEngine implements CommandExecuteEngine {
     }
     
     @Override
-    public Optional<DatabasePacket<?>> getOtherPacket() {
+    public Optional<DatabasePacket<?>> getOtherPacket(final BackendConnection backendConnection) {
         return Optional.empty();
     }
     

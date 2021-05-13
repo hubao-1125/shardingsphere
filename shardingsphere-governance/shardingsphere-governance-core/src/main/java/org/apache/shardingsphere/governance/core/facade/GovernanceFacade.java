@@ -18,14 +18,10 @@
 package org.apache.shardingsphere.governance.core.facade;
 
 import lombok.Getter;
-import org.apache.shardingsphere.governance.core.config.ConfigCenter;
-import org.apache.shardingsphere.governance.core.facade.listener.GovernanceListenerManager;
-import org.apache.shardingsphere.governance.core.facade.repository.GovernanceRepositoryFacade;
-import org.apache.shardingsphere.governance.core.lock.LockCenter;
+import org.apache.shardingsphere.governance.core.facade.repository.RegistryCenterRepositoryFacade;
 import org.apache.shardingsphere.governance.core.registry.RegistryCenter;
-import org.apache.shardingsphere.governance.core.state.GovernedStateContext;
+import org.apache.shardingsphere.governance.core.registry.listener.GovernanceListenerManager;
 import org.apache.shardingsphere.governance.repository.api.config.GovernanceConfiguration;
-import org.apache.shardingsphere.infra.auth.Authentication;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.datasource.DataSourceConfiguration;
 
@@ -33,6 +29,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Governance facade.
@@ -41,18 +39,12 @@ public final class GovernanceFacade implements AutoCloseable {
     
     private boolean isOverwrite;
     
-    private GovernanceRepositoryFacade repositoryFacade;
-    
-    @Getter
-    private ConfigCenter configCenter;
+    private RegistryCenterRepositoryFacade repositoryFacade;
     
     @Getter
     private RegistryCenter registryCenter;
     
     private GovernanceListenerManager listenerManager;
-    
-    @Getter
-    private LockCenter lockCenter;
     
     /**
      * Initialize governance facade.
@@ -62,13 +54,10 @@ public final class GovernanceFacade implements AutoCloseable {
      */
     public void init(final GovernanceConfiguration config, final Collection<String> schemaNames) {
         isOverwrite = config.isOverwrite();
-        repositoryFacade = new GovernanceRepositoryFacade(config);
-        registryCenter = new RegistryCenter(repositoryFacade.getRegistryRepository());
-        configCenter = new ConfigCenter(repositoryFacade.getConfigurationRepository());
-        lockCenter = new LockCenter(repositoryFacade.getRegistryRepository(), registryCenter);
-        listenerManager = new GovernanceListenerManager(repositoryFacade.getRegistryRepository(),
-                repositoryFacade.getConfigurationRepository(), schemaNames.isEmpty() ? configCenter.getAllSchemaNames() : schemaNames);
-        GovernedStateContext.startUp();
+        repositoryFacade = new RegistryCenterRepositoryFacade(config);
+        registryCenter = new RegistryCenter(repositoryFacade.getRegistryCenterRepository());
+        listenerManager = new GovernanceListenerManager(repositoryFacade.getRegistryCenterRepository(), schemaNames.isEmpty()
+                ? registryCenter.getAllSchemaNames() : Stream.of(registryCenter.getAllSchemaNames(), schemaNames).flatMap(Collection::stream).distinct().collect(Collectors.toList()));
     }
     
     /**
@@ -76,14 +65,13 @@ public final class GovernanceFacade implements AutoCloseable {
      *
      * @param dataSourceConfigMap schema data source configuration map
      * @param schemaRuleMap schema rule map
-     * @param authentication authentication
      * @param props properties
      */
     public void onlineInstance(final Map<String, Map<String, DataSourceConfiguration>> dataSourceConfigMap,
-                               final Map<String, Collection<RuleConfiguration>> schemaRuleMap, final Authentication authentication, final Properties props) {
-        configCenter.persistGlobalConfiguration(authentication, props, isOverwrite);
+                               final Map<String, Collection<RuleConfiguration>> schemaRuleMap, final Properties props) {
+        registryCenter.persistGlobalConfiguration(props, isOverwrite);
         for (Entry<String, Map<String, DataSourceConfiguration>> entry : dataSourceConfigMap.entrySet()) {
-            configCenter.persistConfigurations(entry.getKey(), dataSourceConfigMap.get(entry.getKey()), schemaRuleMap.get(entry.getKey()), isOverwrite);
+            registryCenter.persistConfigurations(entry.getKey(), dataSourceConfigMap.get(entry.getKey()), schemaRuleMap.get(entry.getKey()), isOverwrite);
         }
         onlineInstance();
     }
@@ -94,19 +82,8 @@ public final class GovernanceFacade implements AutoCloseable {
     public void onlineInstance() {
         registryCenter.persistInstanceOnline();
         registryCenter.persistDataNodes();
-        listenerManager.init();
-    }
-    
-    /**
-     * Update configurations.
-     *
-     * @param dataSourceConfigMap schema data source configuration map
-     * @param schemaRuleMap schema rule map
-     */
-    public void updateConfigurations(final Map<String, Map<String, DataSourceConfiguration>> dataSourceConfigMap, final Map<String, Collection<RuleConfiguration>> schemaRuleMap) {
-        for (Entry<String, Map<String, DataSourceConfiguration>> entry : dataSourceConfigMap.entrySet()) {
-            configCenter.persistConfigurations(entry.getKey(), dataSourceConfigMap.get(entry.getKey()), schemaRuleMap.get(entry.getKey()), true);
-        }
+        registryCenter.persistPrimaryNodes();
+        listenerManager.initListeners();
     }
     
     @Override

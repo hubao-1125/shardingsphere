@@ -19,55 +19,19 @@ grammar RDLStatement;
 
 import Keyword, Literals, Symbol;
 
-createDataSources
-    : CREATE DATASOURCES LP dataSource (COMMA dataSource)* RP
+addResource
+    : ADD RESOURCE dataSource (COMMA dataSource)*
     ;
 
-createShardingRule
-    : CREATE SHARDINGRULE LP tableRule (COMMA tableRule)* RP
-    ;
-
-tableRule
-    : tableName EQ tableRuleDefinition
+dropResource
+    : DROP RESOURCE IDENTIFIER (COMMA IDENTIFIER)*
     ;
 
 dataSource
-    : dataSourceName EQ dataSourceDefinition
-    ;
-       
-dataSourceDefinition
-    : hostName COLON port COLON dbName (COLON user (COLON password)?)?
-    ;
-
-tableRuleDefinition
-    : strategyType LP strategyDefinition RP
-    ;
-
-strategyType
-    : IDENTIFIER
-    ;
-
-strategyDefinition
-    : columName COMMA strategyProps
-    ;
-
-strategyProps
-    : strategyProp (COMMA strategyProp)*
-    ;
-    
-strategyProp
-    : IDENTIFIER | NUMBER | INT
+    : dataSourceName LP HOST EQ hostName COMMA PORT EQ port COMMA DB EQ dbName COMMA USER EQ user (COMMA PASSWORD EQ password)? RP
     ;
 
 dataSourceName
-    : IDENTIFIER
-    ;
-
-tableName
-    : IDENTIFIER
-    ;
-
-columName
     : IDENTIFIER
     ;
 
@@ -78,10 +42,11 @@ hostName
 ip
     : NUMBER+
     ;
+
 port
     : INT
     ;
-    
+
 dbName
     : IDENTIFIER
     ;
@@ -91,5 +56,157 @@ user
     ;
 
 password
-    : IDENTIFIER | NUMBER | STRING
+    : IDENTIFIER | INT | STRING
+    ;
+
+createShardingTableRule
+    : CREATE SHARDING TABLE RULE shardingTableRuleDefinition (COMMA shardingTableRuleDefinition)*
+    ;
+
+createShardingBindingTableRules
+    : CREATE SHARDING BINDING TABLE RULES LP bindTableRulesDefinition (COMMA bindTableRulesDefinition)* RP
+    ;
+
+bindTableRulesDefinition
+    : LP tableName (COMMA tableName)* RP
+    ;
+
+createShardingBroadcastTableRules
+    : CREATE SHARDING BROADCAST TABLE RULES LP IDENTIFIER (COMMA IDENTIFIER)* RP
+    ;
+
+alterShardingTableRule
+    : ALTER SHARDING TABLE RULE shardingTableRuleDefinition (COMMA shardingTableRuleDefinition)*
+    ;
+
+alterShardingBindingTableRules
+    : ALTER SHARDING BINDING TABLE RULES LP bindTableRulesDefinition (COMMA bindTableRulesDefinition)* RP
+    ;
+
+alterShardingBroadcastTableRules
+    : ALTER SHARDING BROADCAST TABLE RULES LP IDENTIFIER (COMMA IDENTIFIER)* RP
+    ;
+
+createReplicaQueryRule
+    : CREATE REPLICA_QUERY RULE LP replicaQueryRuleDefinition (COMMA replicaQueryRuleDefinition)* RP
+    ;
+
+replicaQueryRuleDefinition
+    : ruleName LP PRIMARY EQ primary=schemaName COMMA REPLICA EQ schemaNames RP functionDefinition
+    ;
+
+alterReplicaQueryRule
+    : ALTER REPLICA_QUERY RULE LP alterReplicaQueryRuleDefinition (COMMA alterReplicaQueryRuleDefinition)* RP
+    ;
+
+alterReplicaQueryRuleDefinition
+    : (MODIFY | ADD) ruleName LP PRIMARY EQ primary=schemaName COMMA REPLICA EQ schemaNames RP functionDefinition?
+    ;
+
+alterShardingTableRuleDefinition
+    : (MODIFY | ADD) shardingTableRuleDefinition
+    ;
+
+shardingTableRuleDefinition
+    : tableName LP resources (COMMA shardingColumn)? (COMMA functionDefinition)? (COMMA keyGenerateStrategy)? RP
+    ;
+
+resources
+    : RESOURCES LP IDENTIFIER (COMMA IDENTIFIER)* RP
+    ;
+
+shardingColumn
+    : SHARDING_COLUMN EQ columnName
+    ;
+
+alterBindingTables
+    : alterBindingTable (COMMA alterBindingTable)*
+    ;
+
+alterBindingTable
+    : (ADD | DROP) bindingTable
+    ;
+
+bindingTables
+    : bindingTable (COMMA bindingTable)*
+    ;
+
+bindingTable
+    : BINDING_TABLE LP tableNames RP
+    ;
+
+defaultTableStrategy
+    : DEFAULT_TABLE_STRATEGY columnName? functionDefinition
+    ;
+
+broadcastTables
+    : BROADCAST_TABLES LP IDENTIFIER (COMMA IDENTIFIER)* RP
+    ;
+
+keyGenerateStrategy
+    : GENERATED_KEY LP COLUMN EQ columnName COMMA functionDefinition RP
+    ;
+
+actualDataNodes
+    : STRING (COMMA STRING)*
+    ;
+
+ruleName
+    : IDENTIFIER
+    ;
+
+tableName
+    : IDENTIFIER
+    ;
+
+tableNames
+    : IDENTIFIER+
+    ;
+
+columnName
+    : IDENTIFIER
+    ;
+
+dropReplicaQueryRule
+    : DROP REPLICA_QUERY RULE LP IDENTIFIER (COMMA IDENTIFIER)* RP
+    ;
+
+dropShardingTableRule
+    : DROP SHARDING TABLE RULE tableName (COMMA tableName)*
+    ;
+
+dropShardingBindingTableRules
+    : DROP SHARDING BINDING TABLE RULES
+    ;
+
+dropShardingBroadcastTableRules
+    : DROP SHARDING BROADCAST TABLE RULES
+    ;
+
+showShardingRule
+    : SHOW SHARDING RULE (FROM schemaName)?
+    ;
+
+schemaNames
+    : schemaName (COMMA schemaName)*
+    ;
+
+schemaName
+    : IDENTIFIER
+    ;
+
+functionDefinition
+    : TYPE LP NAME EQ functionName COMMA PROPERTIES LP algorithmProperties? RP RP
+    ;
+
+functionName
+    : IDENTIFIER
+    ;
+
+algorithmProperties
+    : algorithmProperty (COMMA algorithmProperty)*
+    ;
+
+algorithmProperty
+    : key=(IDENTIFIER | STRING) EQ value=(NUMBER | INT | STRING)
     ;

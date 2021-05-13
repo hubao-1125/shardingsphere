@@ -17,12 +17,16 @@
 
 package org.apache.shardingsphere.sql.parser.oracle.visitor.statement.impl;
 
+import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.sql.parser.api.visitor.operation.SQLStatementVisitor;
 import org.apache.shardingsphere.sql.parser.api.visitor.ASTNode;
 import org.apache.shardingsphere.sql.parser.api.visitor.type.DDLSQLVisitor;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.AddColumnSpecificationContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.AlterDefinitionClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.AlterIndexContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.AlterSessionContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.AlterSynonymContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.AlterDatabaseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.AlterTableContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.ColumnDefinitionContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.ColumnNameContext;
@@ -48,12 +52,16 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.DropColumnDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.ModifyColumnDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.ConstraintDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.DataTypeSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.collection.CollectionValue;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterIndexStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterSessionStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterDatabaseStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterSynonymStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleCreateIndexStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleCreateTableStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleDropIndexStatement;
@@ -63,11 +71,17 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.Ora
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Properties;
 
 /**
  * DDL Statement SQL visitor for Oracle.
  */
+@NoArgsConstructor
 public final class OracleDDLStatementSQLVisitor extends OracleStatementSQLVisitor implements DDLSQLVisitor, SQLStatementVisitor {
+    
+    public OracleDDLStatementSQLVisitor(final Properties props) {
+        super(props);
+    }
     
     @SuppressWarnings("unchecked")
     @Override
@@ -90,7 +104,10 @@ public final class OracleDDLStatementSQLVisitor extends OracleStatementSQLVisito
     @Override
     public ASTNode visitCreateDefinitionClause(final CreateDefinitionClauseContext ctx) {
         CollectionValue<CreateDefinitionSegment> result = new CollectionValue<>();
-        for (RelationalPropertyContext each : ctx.relationalProperties().relationalProperty()) {
+        if (null == ctx.createRelationalTableClause()) {
+            return result;
+        }
+        for (RelationalPropertyContext each : ctx.createRelationalTableClause().relationalProperties().relationalProperty()) {
             if (null != each.columnDefinition()) {
                 result.getValue().add((ColumnDefinitionSegment) visit(each.columnDefinition()));
             }
@@ -229,8 +246,12 @@ public final class OracleDDLStatementSQLVisitor extends OracleStatementSQLVisito
     @Override
     public ASTNode visitDropColumnSpecification(final DropColumnSpecificationContext ctx) {
         Collection<ColumnSegment> columns = new LinkedList<>();
-        for (ColumnNameContext each : ctx.columnOrColumnList().columnName()) {
-            columns.add((ColumnSegment) visit(each));
+        if (null != ctx.columnOrColumnList().columnName()) {
+            columns.add((ColumnSegment) visit(ctx.columnOrColumnList().columnName()));
+        } else {
+            for (ColumnNameContext each : ctx.columnOrColumnList().columnNames().columnName()) {
+                columns.add((ColumnSegment) visit(each));
+            }
         }
         return new DropColumnDefinitionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), columns);
     }
@@ -255,16 +276,36 @@ public final class OracleDDLStatementSQLVisitor extends OracleStatementSQLVisito
         if (null != ctx.createIndexDefinitionClause().tableIndexClause()) {
             result.setTable((SimpleTableSegment) visit(ctx.createIndexDefinitionClause().tableIndexClause().tableName()));
         }
+        result.setIndex((IndexSegment) visit(ctx.indexName()));
         return result;
     }
     
     @Override
     public ASTNode visitAlterIndex(final AlterIndexContext ctx) {
-        return new OracleAlterIndexStatement();
+        OracleAlterIndexStatement result = new OracleAlterIndexStatement();
+        result.setIndex((IndexSegment) visit(ctx.indexName()));
+        return result;
     }
     
     @Override
     public ASTNode visitDropIndex(final DropIndexContext ctx) {
-        return new OracleDropIndexStatement();
+        OracleDropIndexStatement result = new OracleDropIndexStatement();
+        result.getIndexes().add((IndexSegment) visit(ctx.indexName()));
+        return result;
+    }
+
+    @Override
+    public ASTNode visitAlterSynonym(final AlterSynonymContext ctx) {
+        return new OracleAlterSynonymStatement();
+    }
+    
+    @Override
+    public ASTNode visitAlterSession(final AlterSessionContext ctx) {
+        return new OracleAlterSessionStatement();
+    }
+
+    @Override
+    public ASTNode visitAlterDatabase(final AlterDatabaseContext ctx) {
+        return new OracleAlterDatabaseStatement();
     }
 }

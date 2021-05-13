@@ -17,12 +17,15 @@
 
 package org.apache.shardingsphere.proxy.backend.communication.jdbc.executor;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroup;
+import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroupContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutionUnit;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutor;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.ExecuteResult;
+import org.apache.shardingsphere.infra.executor.sql.process.ExecuteProcessEngine;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.executor.callback.ProxyJDBCExecutorCallbackFactory;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
@@ -40,22 +43,25 @@ public final class ProxyJDBCExecutor {
     
     private final BackendConnection backendConnection;
     
+    @Getter
     private final JDBCExecutor jdbcExecutor;
     
     /**
      * Execute.
      * 
-     * @param executionGroups execution groups
+     * @param context SQL statement context
+     * @param executionGroupContext execution group context
      * @param isReturnGeneratedKeys is return generated keys
      * @param isExceptionThrown is exception thrown
      * @return execute results
      * @throws SQLException SQL exception
      */
-    public Collection<ExecuteResult> execute(final Collection<ExecutionGroup<JDBCExecutionUnit>> executionGroups, 
+    public Collection<ExecuteResult> execute(final SQLStatementContext<?> context, final ExecutionGroupContext<JDBCExecutionUnit> executionGroupContext,
                                              final boolean isReturnGeneratedKeys, final boolean isExceptionThrown) throws SQLException {
-        DatabaseType databaseType = ProxyContext.getInstance().getMetaDataContexts().getDatabaseType();
-        return jdbcExecutor.execute(executionGroups,
-                ProxyJDBCExecutorCallbackFactory.newInstance(type, databaseType, backendConnection, isExceptionThrown, isReturnGeneratedKeys, true),
-                ProxyJDBCExecutorCallbackFactory.newInstance(type, databaseType, backendConnection, isExceptionThrown, isReturnGeneratedKeys, false));
+        DatabaseType databaseType = ProxyContext.getInstance().getMetaDataContexts().getMetaData(backendConnection.getSchemaName()).getResource().getDatabaseType();
+        ExecuteProcessEngine.initialize(context, executionGroupContext);
+        return jdbcExecutor.execute(executionGroupContext,
+                ProxyJDBCExecutorCallbackFactory.newInstance(type, databaseType, context.getSqlStatement(), backendConnection, isReturnGeneratedKeys, isExceptionThrown, true),
+                ProxyJDBCExecutorCallbackFactory.newInstance(type, databaseType, context.getSqlStatement(), backendConnection, isReturnGeneratedKeys, isExceptionThrown, false));
     }
 }

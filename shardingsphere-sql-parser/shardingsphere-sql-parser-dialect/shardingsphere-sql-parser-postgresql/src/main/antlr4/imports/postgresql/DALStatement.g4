@@ -20,7 +20,7 @@ grammar DALStatement;
 import Symbol, Keyword, PostgreSQLKeyword, Literals, BaseRule, DMLStatement, DDLStatement;
 
 show
-    : SHOW (varName | TIME ZONE | TRANSACTION ISOLATION LEVEL | SESSION AUTHORIZATION | ALL)
+    : SHOW (varName | TIME ZONE | TRANSACTION ISOLATION LEVEL | SESSION AUTHORIZATION | ALL) EOF
     ;
 
 set
@@ -63,7 +63,7 @@ explain
     ;
 
 explainableStmt
-    : select | insert | update | delete | declare | execute | createMaterializedView | refreshMatViewStmt
+    : select | insert | update | delete | declare | executeStmt | createMaterializedView | refreshMatViewStmt
     ;
 
 explainOptionList
@@ -138,4 +138,3 @@ valuesClause
 vacuum
     : VACUUM ((FULL? FREEZE? VERBOSE? ANALYZE?) | (LP_ vacAnalyzeOptionList RP_)) vacuumRelationList?
     ;
-

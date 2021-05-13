@@ -23,6 +23,7 @@ import org.apache.shardingsphere.infra.binder.SQLStatementContextFactory;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeRegistry;
+import org.apache.shardingsphere.infra.eventbus.ShardingSphereEventBus;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.resource.ShardingSphereResource;
 import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
@@ -30,6 +31,7 @@ import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
 import org.apache.shardingsphere.infra.metadata.schema.model.IndexMetaData;
 import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
+import org.apache.shardingsphere.infra.metadata.schema.refresher.event.CreateTableEvent;
 import org.apache.shardingsphere.infra.parser.sql.SQLStatementParserEngine;
 import org.apache.shardingsphere.infra.rewrite.SQLRewriteEntry;
 import org.apache.shardingsphere.infra.rewrite.engine.result.GenericSQLRewriteResult;
@@ -45,6 +47,7 @@ import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.rule.builder.ShardingSphereRulesBuilder;
 import org.apache.shardingsphere.infra.yaml.config.YamlRootRuleConfigurations;
 import org.apache.shardingsphere.infra.yaml.engine.YamlEngine;
+import org.apache.shardingsphere.infra.yaml.swapper.YamlDataSourceConfigurationSwapper;
 import org.apache.shardingsphere.infra.yaml.swapper.YamlRuleConfigurationSwapperEngine;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -79,20 +82,27 @@ public final class ShardingSQLRewriterParameterizedTest extends AbstractSQLRewri
     protected Collection<SQLRewriteUnit> createSQLRewriteUnits() throws IOException {
         YamlRootRuleConfigurations yamlRootRuleConfigs = createYamlRootRuleConfigurations();
         String databaseType = null == getTestParameters().getDatabaseType() ? "SQL92" : getTestParameters().getDatabaseType();
-        Collection<ShardingSphereRule> rules = ShardingSphereRulesBuilder.build(new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(
-                yamlRootRuleConfigs.getRules()), DatabaseTypeRegistry.getTrunkDatabaseType(databaseType), yamlRootRuleConfigs.getDataSources());
+        Collection<ShardingSphereRule> rules = ShardingSphereRulesBuilder.buildSchemaRules("schema_name", new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(
+                yamlRootRuleConfigs.getRules()), DatabaseTypeRegistry.getTrunkDatabaseType(databaseType),
+                new YamlDataSourceConfigurationSwapper().swapToDataSources(yamlRootRuleConfigs.getDataSources()));
         SQLStatementParserEngine sqlStatementParserEngine = new SQLStatementParserEngine(databaseType);
         ShardingSphereSchema schema = mockSchema();
         ConfigurationProperties props = new ConfigurationProperties(yamlRootRuleConfigs.getProps());
         SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(
                 schema, getTestParameters().getInputParameters(), sqlStatementParserEngine.parse(getTestParameters().getInputSQL(), false));
         LogicSQL logicSQL = new LogicSQL(sqlStatementContext, getTestParameters().getInputSQL(), getTestParameters().getInputParameters());
+        mockShardingSphereRuleSingleTable();
         ShardingSphereMetaData metaData = new ShardingSphereMetaData("sharding_db", mock(ShardingSphereResource.class), new ShardingSphereRuleMetaData(Collections.emptyList(), rules), schema);
         RouteContext routeContext = new SQLRouteEngine(rules, props).route(logicSQL, metaData);
         SQLRewriteResult sqlRewriteResult = new SQLRewriteEntry(
                 schema, props, rules).rewrite(getTestParameters().getInputSQL(), getTestParameters().getInputParameters(), sqlStatementContext, routeContext);
         return sqlRewriteResult instanceof GenericSQLRewriteResult
                 ? Collections.singletonList(((GenericSQLRewriteResult) sqlRewriteResult).getSqlRewriteUnit()) : (((RouteSQLRewriteResult) sqlRewriteResult).getSqlRewriteUnits()).values();
+    }
+        
+    private void mockShardingSphereRuleSingleTable() {
+        ShardingSphereEventBus.getInstance().post(new CreateTableEvent("db", "t_single", mock(TableMetaData.class)));
+        ShardingSphereEventBus.getInstance().post(new CreateTableEvent("db", "t_single_extend", mock(TableMetaData.class)));
     }
     
     private YamlRootRuleConfigurations createYamlRootRuleConfigurations() throws IOException {
@@ -118,7 +128,7 @@ public final class ShardingSQLRewriterParameterizedTest extends AbstractSQLRewri
     
     private Map<String, ColumnMetaData> createColumnMetaDataMap() {
         Map<String, ColumnMetaData> result = new LinkedHashMap<>(3, 1);
-        result.put("account_id", new ColumnMetaData("account_id", Types.INTEGER, "INT", true, true, false));
+        result.put("account_id", new ColumnMetaData("account_id", Types.INTEGER, true, true, false));
         result.put("amount", mock(ColumnMetaData.class));
         result.put("status", mock(ColumnMetaData.class));
         return result;

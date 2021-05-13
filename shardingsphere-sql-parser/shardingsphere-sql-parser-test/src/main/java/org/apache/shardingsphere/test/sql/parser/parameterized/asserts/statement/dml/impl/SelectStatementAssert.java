@@ -37,6 +37,7 @@ import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain
 import java.util.Optional;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -60,7 +61,6 @@ public final class SelectStatementAssert {
         assertLimitClause(assertContext, actual, expected);
         assertTable(assertContext, actual, expected);
         assertLockClause(assertContext, actual, expected);
-//        TODO support table assert
     }
     
     private static void assertProjection(final SQLCaseAssertContext assertContext, final SelectStatement actual, final SelectStatementTestCase expected) {
@@ -74,7 +74,7 @@ public final class SelectStatementAssert {
         if (null != expected.getFrom()) {
             TableAssert.assertIs(assertContext, actual.getFrom(), expected.getFrom());
         } else {
-            assertFalse(assertContext.getText("Actual from should not exist."), null != actual.getFrom());
+            assertNull(assertContext.getText("Actual from should not exist."), actual.getFrom());
         }
     }
     

@@ -41,6 +41,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.Ex
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.IndexOrderByItemSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.TextOrderByItemSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.JoinTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.util.SQLUtil;
@@ -73,7 +74,7 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
     public SelectStatementContext(final SelectStatement sqlStatement, final GroupByContext groupByContext,
                                   final OrderByContext orderByContext, final ProjectionsContext projectionsContext, final PaginationContext paginationContext) {
         super(sqlStatement);
-        tablesContext = new TablesContext(getSimpleTableSegments());
+        tablesContext = new TablesContext(getAllSimpleTableSegments());
         this.groupByContext = groupByContext;
         this.orderByContext = orderByContext;
         this.projectionsContext = projectionsContext;
@@ -83,10 +84,10 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
     
     public SelectStatementContext(final ShardingSphereSchema schema, final List<Object> parameters, final SelectStatement sqlStatement) {
         super(sqlStatement);
-        tablesContext = new TablesContext(getSimpleTableSegments());
+        tablesContext = new TablesContext(getAllSimpleTableSegments());
         groupByContext = new GroupByContextEngine().createGroupByContext(sqlStatement);
-        orderByContext = new OrderByContextEngine().createOrderBy(sqlStatement, groupByContext);
-        projectionsContext = new ProjectionsContextEngine(schema).createProjectionsContext(getSimpleTableSegments(), getSqlStatement().getProjections(), groupByContext, orderByContext);
+        orderByContext = new OrderByContextEngine().createOrderBy(schema, sqlStatement, groupByContext);
+        projectionsContext = new ProjectionsContextEngine(schema).createProjectionsContext(getFromSimpleTableSegments(), getSqlStatement().getProjections(), groupByContext, orderByContext);
         paginationContext = new PaginationContextEngine().createPaginationContext(sqlStatement, projectionsContext, parameters);
         containsSubquery = containsSubquery();
     }
@@ -99,6 +100,15 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
             }
         }
         return false;
+    }
+    
+    /**
+     * Whether it contain join query.
+     *
+     * @return contain join query or not
+     */
+    public boolean isContainsJoinQuery() {
+        return getSqlStatement().getFrom() instanceof JoinTableSegment;
     }
     
     /**
@@ -187,12 +197,22 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
     }
     
     /**
-     * get tables.
-     * @return tables.
+     * Get all tables.
+     * 
+     * @return all tables
      */
-    public Collection<SimpleTableSegment> getSimpleTableSegments() {
+    public Collection<SimpleTableSegment> getAllSimpleTableSegments() {
         TableExtractor tableExtractor = new TableExtractor();
         tableExtractor.extractTablesFromSelect(getSqlStatement());
         return tableExtractor.getRewriteTables();
+    }
+    
+    /**
+     * Get tables with from clause.
+     *
+     * @return tables with from clause
+     */
+    public Collection<SimpleTableSegment> getFromSimpleTableSegments() {
+        return new TableExtractor().extractTablesWithFromClause(getSqlStatement());
     }
 }

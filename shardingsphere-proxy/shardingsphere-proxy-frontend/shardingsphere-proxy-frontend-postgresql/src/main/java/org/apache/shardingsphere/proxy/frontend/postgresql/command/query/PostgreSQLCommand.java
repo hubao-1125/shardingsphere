@@ -18,14 +18,17 @@
 package org.apache.shardingsphere.proxy.frontend.postgresql.command.query;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.CreateDataSourcesStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.CreateShardingRuleStatement;
+import org.apache.shardingsphere.distsql.parser.statement.rdl.create.impl.AddResourceStatement;
+import org.apache.shardingsphere.distsql.parser.statement.rdl.create.impl.CreateShardingTableRuleStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateDatabaseStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropDatabaseStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DeleteStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.BeginTransactionStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.CommitStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.RollbackStatement;
 
 /**
  * PostgreSQL command.
@@ -50,11 +53,20 @@ public final class PostgreSQLCommand {
         if (sqlStatement instanceof UpdateStatement) {
             return "UPDATE";
         }
-        if (sqlStatement instanceof CreateDatabaseStatement || sqlStatement instanceof CreateDataSourcesStatement || sqlStatement instanceof CreateShardingRuleStatement) {
+        if (sqlStatement instanceof CreateDatabaseStatement || sqlStatement instanceof AddResourceStatement || sqlStatement instanceof CreateShardingTableRuleStatement) {
             return "CREATE";
         }
         if (sqlStatement instanceof DropDatabaseStatement) {
             return "DROP";
+        }
+        if (sqlStatement instanceof BeginTransactionStatement) {
+            return "BEGIN";
+        }
+        if (sqlStatement instanceof CommitStatement) {
+            return "COMMIT";
+        }
+        if (sqlStatement instanceof RollbackStatement) {
+            return "ROLLBACK";
         }
         return "";
     }
