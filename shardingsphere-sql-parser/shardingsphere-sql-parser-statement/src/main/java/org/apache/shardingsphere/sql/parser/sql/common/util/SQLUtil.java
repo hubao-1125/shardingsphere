@@ -66,6 +66,8 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SQLUtil {
     
+    private static final String SQL_END = ";";
+    
     /**
      * Get exactly number value and type.
      *
@@ -141,8 +143,8 @@ public final class SQLUtil {
     /**
      * Get subquery from tableSegment.
      *
-     * @param tableSegment TableSegment.
-     * @return exactly SubqueryTableSegment list.
+     * @param tableSegment TableSegment
+     * @return exactly SubqueryTableSegment list
      */
     public static List<SubqueryTableSegment> getSubqueryTableSegmentFromTableSegment(final TableSegment tableSegment) {
         List<SubqueryTableSegment> result = new LinkedList<>();
@@ -243,5 +245,15 @@ public final class SQLUtil {
             return new CommonExpressionSegment(startIndex, stopIndex, ((OtherLiteralValue) astNode).getValue());
         }
         return new CommonExpressionSegment(startIndex, stopIndex, text);
+    }
+    
+    /**
+     * Trim the semicolon of sql.
+     *
+     * @param sql SQL to be trim
+     * @return sql without semicolon
+     */
+    public static String trimSemicolon(final String sql) {
+        return sql.endsWith(SQL_END) ? sql.substring(0, sql.length() - 1) : sql;
     }
 }

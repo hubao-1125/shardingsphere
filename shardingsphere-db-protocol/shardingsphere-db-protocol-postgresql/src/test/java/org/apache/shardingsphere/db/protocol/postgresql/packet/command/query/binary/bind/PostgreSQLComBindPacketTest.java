@@ -18,9 +18,9 @@
 package org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.bind;
 
 import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLBinaryColumnType;
+import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLColumnFormat;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.PostgreSQLBinaryStatementRegistry;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.PostgreSQLBinaryStatementParameterType;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,12 +56,14 @@ public final class PostgreSQLComBindPacketTest {
         when(payload.readInt4()).thenReturn(1);
         String sql = "select * from order where id = ? ";
         PostgreSQLBinaryStatementRegistry.getInstance().get(1).register(
-                "sts-id", sql, 1, Collections.singletonList(new PostgreSQLBinaryStatementParameterType(PostgreSQLBinaryColumnType.POSTGRESQL_TYPE_INT8)));
+                "sts-id", sql, 1, Collections.singletonList(PostgreSQLBinaryColumnType.POSTGRESQL_TYPE_INT8));
         PostgreSQLComBindPacket bindPacket = new PostgreSQLComBindPacket(payload, 1);
         bindPacket.write(payload);
         assertThat(bindPacket.getSql(), is(sql));
         assertThat(bindPacket.getParameters().size(), is(1));
-        assertThat(bindPacket.isBinaryRowData(), is(true));
+        assertThat(bindPacket.getResultFormatCodes().size(), is(1));
+        assertThat(bindPacket.getResultFormatCodes().get(0), is(1));
+        assertThat(bindPacket.getResultFormatByColumnIndex(0), is(PostgreSQLColumnFormat.BINARY));
     }
     
     @Test
@@ -70,7 +72,6 @@ public final class PostgreSQLComBindPacketTest {
         bindPacket.write(payload);
         assertNull(bindPacket.getSql());
         assertThat(bindPacket.getParameters().size(), is(0));
-        assertThat(bindPacket.isBinaryRowData(), is(true));
     }
     
     @Test

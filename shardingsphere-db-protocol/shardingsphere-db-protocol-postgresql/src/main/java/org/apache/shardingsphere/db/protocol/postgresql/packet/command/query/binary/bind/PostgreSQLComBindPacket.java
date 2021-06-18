@@ -18,10 +18,11 @@
 package org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.bind;
 
 import lombok.Getter;
+import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLBinaryColumnType;
+import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLColumnFormat;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.PostgreSQLBinaryStatement;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.PostgreSQLBinaryStatementParameterType;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.PostgreSQLBinaryStatementRegistry;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.bind.protocol.PostgreSQLBinaryProtocolValue;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.bind.protocol.PostgreSQLBinaryProtocolValueFactory;
@@ -48,7 +49,7 @@ public final class PostgreSQLComBindPacket extends PostgreSQLCommandPacket {
     
     private final List<Object> parameters;
     
-    private final boolean binaryRowData;
+    private final List<Integer> resultFormatCodes;
     
     public PostgreSQLComBindPacket(final PostgreSQLPacketPayload payload, final int connectionId) {
         payload.readInt4();
@@ -61,15 +62,15 @@ public final class PostgreSQLComBindPacket extends PostgreSQLCommandPacket {
         }
         PostgreSQLBinaryStatement binaryStatement = PostgreSQLBinaryStatementRegistry.getInstance().get(connectionId).getBinaryStatement(statementId);
         sql = null == binaryStatement ? null : binaryStatement.getSql();
-        parameters = null == sql ? Collections.emptyList() : getParameters(payload, parameterFormats, binaryStatement.getParameterTypes());
+        parameters = null == sql ? Collections.emptyList() : getParameters(payload, parameterFormats, binaryStatement.getColumnTypes());
         int resultFormatsLength = payload.readInt2();
-        binaryRowData = parameterFormats.contains(1);
+        resultFormatCodes = new ArrayList<>(resultFormatsLength);
         for (int i = 0; i < resultFormatsLength; i++) {
-            payload.readInt2();
+            resultFormatCodes.add(payload.readInt2());
         }
     }
     
-    private List<Object> getParameters(final PostgreSQLPacketPayload payload, final List<Integer> parameterFormats, final List<PostgreSQLBinaryStatementParameterType> parameterTypes) {
+    private List<Object> getParameters(final PostgreSQLPacketPayload payload, final List<Integer> parameterFormats, final List<PostgreSQLBinaryColumnType> columnTypes) {
         int parameterCount = payload.readInt2();
         List<Object> result = new ArrayList<>(parameterCount);
         for (int parameterIndex = 0; parameterIndex < parameterCount; parameterIndex++) {
@@ -79,7 +80,7 @@ public final class PostgreSQLComBindPacket extends PostgreSQLCommandPacket {
                 continue;
             }
             Object parameterValue = isTextParameterValue(parameterFormats, parameterIndex)
-                    ? getTextParameters(payload, parameterValueLength, parameterTypes.get(parameterIndex)) : getBinaryParameters(payload, parameterValueLength, parameterTypes.get(parameterIndex));
+                    ? getTextParameters(payload, parameterValueLength, columnTypes.get(parameterIndex)) : getBinaryParameters(payload, parameterValueLength, columnTypes.get(parameterIndex));
             result.add(parameterValue);
         }
         return result;
@@ -95,15 +96,16 @@ public final class PostgreSQLComBindPacket extends PostgreSQLCommandPacket {
         return 0 == parameterFormats.get(parameterIndex);
     }
     
-    private Object getTextParameters(final PostgreSQLPacketPayload payload, final int parameterValueLength, final PostgreSQLBinaryStatementParameterType parameterType) {
+    private Object getTextParameters(final PostgreSQLPacketPayload payload, final int parameterValueLength, final PostgreSQLBinaryColumnType columnType) {
         byte[] bytes = new byte[parameterValueLength];
         payload.getByteBuf().readBytes(bytes);
-        return getTextParameters(new String(bytes), parameterType);
+        return getTextParameters(new String(bytes), columnType);
     }
-    
-    // TODO extract to single class
-    private Object getTextParameters(final String textValue, final PostgreSQLBinaryStatementParameterType parameterType) {
-        switch (parameterType.getColumnType()) {
+
+    private Object getTextParameters(final String textValue, final PostgreSQLBinaryColumnType columnType) {
+        switch (columnType) {
+            case POSTGRESQL_TYPE_UNSPECIFIED:
+                return new PostgreSQLTypeUnspecifiedSQLParameter(textValue);
             case POSTGRESQL_TYPE_BOOL:
                 return Boolean.valueOf(textValue);
             case POSTGRESQL_TYPE_INT2:
@@ -137,9 +139,25 @@ public final class PostgreSQLComBindPacket extends PostgreSQLCommandPacket {
         }
     }
     
-    private Object getBinaryParameters(final PostgreSQLPacketPayload payload, final int parameterValueLength, final PostgreSQLBinaryStatementParameterType parameterType) {
-        PostgreSQLBinaryProtocolValue binaryProtocolValue = PostgreSQLBinaryProtocolValueFactory.getBinaryProtocolValue(parameterType.getColumnType());
+    private Object getBinaryParameters(final PostgreSQLPacketPayload payload, final int parameterValueLength, final PostgreSQLBinaryColumnType columnType) {
+        PostgreSQLBinaryProtocolValue binaryProtocolValue = PostgreSQLBinaryProtocolValueFactory.getBinaryProtocolValue(columnType);
         return binaryProtocolValue.read(payload, parameterValueLength);
+    }
+    
+    /**
+     * Get result format by column index.
+     *
+     * @param columnIndex column index
+     * @return result format
+     */
+    public PostgreSQLColumnFormat getResultFormatByColumnIndex(final int columnIndex) {
+        if (resultFormatCodes.isEmpty()) {
+            return PostgreSQLColumnFormat.TEXT;
+        }
+        if (1 == resultFormatCodes.size()) {
+            return PostgreSQLColumnFormat.valueOf(resultFormatCodes.get(0));
+        }
+        return PostgreSQLColumnFormat.valueOf(resultFormatCodes.get(columnIndex));
     }
     
     @Override

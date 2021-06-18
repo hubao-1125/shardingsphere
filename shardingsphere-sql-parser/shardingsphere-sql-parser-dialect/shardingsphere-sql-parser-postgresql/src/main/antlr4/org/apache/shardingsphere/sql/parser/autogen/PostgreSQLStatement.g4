@@ -33,9 +33,13 @@ execute
     | truncateTable
     | setTransaction
     | beginTransaction
+    | startTransaction
+    | end
     | commit
     | rollback
     | savepoint
+    | releaseSavepoint
+    | rollbackToSavepoint
     | grant
     | revoke
     | createUser
@@ -71,5 +75,11 @@ execute
     | prepare
     | executeStmt
     | deallocate
+    | explain
+    | analyzeTable
+    | load
+    | createTablespace
+    | alterTablespace
+    | dropTablespace
     ) SEMI_?
     ;

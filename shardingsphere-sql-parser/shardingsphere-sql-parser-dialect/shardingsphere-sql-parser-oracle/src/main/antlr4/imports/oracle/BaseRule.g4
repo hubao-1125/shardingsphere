@@ -38,7 +38,7 @@ stringLiterals
     ;
 
 numberLiterals
-   : MINUS_? NUMBER_
+   : (PLUS_ | MINUS_)? (INTEGER_ | NUMBER_)
    ;
 
 dateTimeLiterals
@@ -124,6 +124,10 @@ clusterName
     ;
 
 indexName
+    : (owner DOT_)? name
+    ;
+
+constraintName
     : identifier
     ;
 
@@ -173,6 +177,14 @@ parameterValue
 
 directoryName
     : identifier
+    ;
+
+dispatcherName
+    : stringLiterals
+    ;
+
+clientId
+    : stringLiterals
     ;
 
 opaqueFormatSpec
@@ -240,7 +252,11 @@ partitionSetName
     ;
 
 partitionKeyValue
-    : NUMBER_ | dateTimeLiterals
+    : INTEGER_ | dateTimeLiterals
+    ;
+
+subpartitionKeyValue
+    : INTEGER_ | dateTimeLiterals
     ;
 
 zonemapName
@@ -284,11 +300,11 @@ columnCollationName
     ;
 
 alias
-    : IDENTIFIER_
+    : identifier | STRING_
     ;
 
 dataTypeLength
-    : LP_ (NUMBER_ (COMMA_ NUMBER_)?)? RP_
+    : LP_ (INTEGER_ (COMMA_ INTEGER_)?)? RP_
     ;
 
 primaryKey
@@ -334,6 +350,7 @@ comparisonOperator
 predicate
     : bitExpr NOT? IN subquery
     | bitExpr NOT? IN LP_ expr (COMMA_ expr)* RP_
+    | bitExpr NOT? IN LP_ expr (COMMA_ expr)* RP_ AND predicate
     | bitExpr NOT? BETWEEN bitExpr AND predicate
     | bitExpr NOT? LIKE simpleExpr (ESCAPE simpleExpr)?
     | bitExpr
@@ -420,11 +437,11 @@ subquery
     ;
 
 orderByClause
-    : ORDER BY orderByItem (COMMA_ orderByItem)*
+    : ORDER SIBLINGS? BY orderByItem (COMMA_ orderByItem)*
     ;
 
 orderByItem
-    : (columnName | numberLiterals | expr) (ASC | DESC)?
+    : (columnName | numberLiterals | expr) (ASC | DESC)? (NULLS FIRST | NULLS LAST)?
     ;
 
 attributeName
@@ -544,7 +561,7 @@ asmFileName
     ;
 
 fileNumber
-    : NUMBER_
+    : INTEGER_
     ;
 
 instanceName
@@ -597,4 +614,120 @@ domain
 
 dateValue
     : dateTimeLiterals | stringLiterals | numberLiterals | expr
+    ;
+
+sessionId
+    : numberLiterals
+    ;
+
+serialNumber
+    : numberLiterals
+    ;
+
+instanceId
+    : NUMBER_
+    ;
+
+sqlId
+    : identifier
+    ;
+
+logFileName
+    : stringLiterals
+    ;
+
+logFileGroupsArchivedLocationName
+    : stringLiterals
+    ;
+
+asmVersion
+    : stringLiterals
+    ;
+
+walletPassword
+    : identifier
+    ;
+
+hsmAuthString
+    : identifier
+    ;
+
+targetDbName
+    : identifier
+    ;
+
+certificateId
+    : identifier
+    ;
+
+categoryName
+    : identifier
+    ;
+
+offset
+    : numberLiterals | expr | nullValueLiterals
+    ;
+
+rowcount
+    : numberLiterals | expr | nullValueLiterals
+    ;
+
+percent
+    : numberLiterals | expr | nullValueLiterals
+    ;
+
+rollbackSegment
+    : identifier
+    ;
+
+queryName
+    : (owner DOT_)? name
+    ;
+
+cycleValue
+    : STRING_
+    ;
+
+noCycleValue
+    : STRING_
+    ;
+
+orderingColumn
+    : columnName
+    ;
+
+subavName
+    : (owner DOT_)? name
+    ;
+
+baseAvName
+    : (owner DOT_)? name
+    ;
+
+measName
+    : identifier
+    ;
+
+levelRef
+    : identifier
+    ;
+
+offsetExpr
+    : expr | numberLiterals
+    ;
+
+memberKeyExpr
+    : identifier
+    ;
+
+depthExpression
+    : identifier
+    ;
+
+unitName
+    : (owner DOT_)? name
+    ;
+
+procedureName
+    : identifier
     ;

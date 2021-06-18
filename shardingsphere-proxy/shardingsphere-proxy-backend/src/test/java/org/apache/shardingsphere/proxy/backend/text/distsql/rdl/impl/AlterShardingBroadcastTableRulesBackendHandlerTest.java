@@ -17,13 +17,13 @@
 
 package org.apache.shardingsphere.proxy.backend.text.distsql.rdl.impl;
 
-import org.apache.shardingsphere.distsql.parser.statement.rdl.alter.AlterShardingBroadcastTableRulesStatement;
+import org.apache.shardingsphere.sharding.distsql.parser.statement.AlterShardingBroadcastTableRulesStatement;
 import org.apache.shardingsphere.infra.context.metadata.MetaDataContexts;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
-import org.apache.shardingsphere.proxy.backend.exception.ShardingRuleNotExistedException;
+import org.apache.shardingsphere.proxy.backend.exception.ShardingBroadcastTableRulesNotExistsException;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
 import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -63,16 +63,15 @@ public final class AlterShardingBroadcastTableRulesBackendHandlerTest {
     @Before
     public void setUp() throws Exception {
         ProxyContext.getInstance().init(metaDataContexts, transactionContexts);
-        when(metaDataContexts.getAllSchemaNames()).thenReturn(Arrays.asList("test"));
+        when(metaDataContexts.getAllSchemaNames()).thenReturn(Collections.singleton("test"));
         when(metaDataContexts.getMetaData(eq("test"))).thenReturn(shardingSphereMetaData);
         when(shardingSphereMetaData.getRuleMetaData()).thenReturn(shardingSphereRuleMetaData);
     }
     
-    @Test(expected = ShardingRuleNotExistedException.class)
+    @Test(expected = ShardingBroadcastTableRulesNotExistsException.class)
     public void assertExecuteWithoutShardingRuleConfiguration() {
         when(shardingSphereRuleMetaData.getConfigurations()).thenReturn(new ArrayList<>());
-        AlterShardingBroadcastTableRulesStatement statement = new AlterShardingBroadcastTableRulesStatement();
-        statement.getTables().add("t_1");
+        AlterShardingBroadcastTableRulesStatement statement = new AlterShardingBroadcastTableRulesStatement(Collections.singleton("t_1"));
         AlterShardingBroadcastTableRulesBackendHandler handler = new AlterShardingBroadcastTableRulesBackendHandler(statement, backendConnection);
         handler.execute("test", statement);
     }
@@ -81,9 +80,8 @@ public final class AlterShardingBroadcastTableRulesBackendHandlerTest {
     public void assertExecuteWithExistShardingBroadcastTableRules() {
         ShardingRuleConfiguration shardingRuleConfiguration = new ShardingRuleConfiguration();
         shardingRuleConfiguration.getBroadcastTables().add("t_1");
-        when(shardingSphereRuleMetaData.getConfigurations()).thenReturn(Arrays.asList(shardingRuleConfiguration));
-        AlterShardingBroadcastTableRulesStatement statement = new AlterShardingBroadcastTableRulesStatement();
-        statement.getTables().add("t_2");
+        when(shardingSphereRuleMetaData.getConfigurations()).thenReturn(Collections.singleton(shardingRuleConfiguration));
+        AlterShardingBroadcastTableRulesStatement statement = new AlterShardingBroadcastTableRulesStatement(Collections.singleton("t_2"));
         AlterShardingBroadcastTableRulesBackendHandler handler = new AlterShardingBroadcastTableRulesBackendHandler(statement, backendConnection);
         ResponseHeader responseHeader = handler.execute("test", statement);
         assertNotNull(responseHeader);

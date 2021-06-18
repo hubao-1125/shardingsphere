@@ -20,6 +20,7 @@ package org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statemen
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterIndexStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterSystemStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterTableStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateIndexStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateTableStatement;
@@ -29,11 +30,14 @@ import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropTableSt
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.TruncateStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterSessionStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAlterSynonymStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl.OracleAnalyzeStatement;
 import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.SQLCaseAssertContext;
 import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statement.ddl.impl.AlterIndexStatementAssert;
 import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statement.ddl.impl.AlterSessionStatementAssert;
 import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statement.ddl.impl.AlterSynonymStatementAssert;
+import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statement.ddl.impl.AlterSystemStatementAssert;
 import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statement.ddl.impl.AlterTableStatementAssert;
+import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statement.ddl.impl.AnalyzeStatementAssert;
 import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statement.ddl.impl.CreateIndexStatementAssert;
 import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statement.ddl.impl.CreateTableStatementAssert;
 import org.apache.shardingsphere.test.sql.parser.parameterized.asserts.statement.ddl.impl.DropIndexStatementAssert;
@@ -43,7 +47,9 @@ import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.ddl.AlterIndexStatementTestCase;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.ddl.AlterSessionStatementTestCase;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.ddl.AlterSynonymStatementTestCase;
+import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.ddl.AlterSystemStatementTestCase;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.ddl.AlterTableStatementTestCase;
+import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.ddl.AnalyzeStatementTestCase;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.ddl.CreateIndexStatementTestCase;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.ddl.CreateTableStatementTestCase;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.ddl.DropIndexStatementTestCase;
@@ -82,6 +88,10 @@ public final class DDLStatementAssert {
             AlterSynonymStatementAssert.assertIs(assertContext, (OracleAlterSynonymStatement) actual, (AlterSynonymStatementTestCase) expected);
         } else if (actual instanceof OracleAlterSessionStatement) {
             AlterSessionStatementAssert.assertIs(assertContext, (OracleAlterSessionStatement) actual, (AlterSessionStatementTestCase) expected);
+        } else if (actual instanceof AlterSystemStatement) {
+            AlterSystemStatementAssert.assertIs(assertContext, (AlterSystemStatement) actual, (AlterSystemStatementTestCase) expected);
+        } else if (actual instanceof OracleAnalyzeStatement) {
+            AnalyzeStatementAssert.assertIs(assertContext, (OracleAnalyzeStatement) actual, (AnalyzeStatementTestCase) expected);
         }
     }
 }
