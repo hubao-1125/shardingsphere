@@ -27,28 +27,20 @@ ADD
     : A D D
     ;
 
+CLEAR
+    : C L E A R
+    ;
+
 DROP
     : D R O P
     ;
 
+SET
+    : S E T
+    ;
+
 SHOW
     : S H O W
-    ;
-
-START
-    : S T A R T
-    ;
-
-STOP
-    : S T O P
-    ;
-
-RESET
-    : R E S E T
-    ;
-
-CHECK
-    : C H E C K
     ;
 
 RESOURCE
@@ -63,20 +55,8 @@ FROM
     : F R O M
     ;
 
-SCALING
-    : S C A L I N G
-    ;
-
-JOB
-    : J O B
-    ;
-
-LIST
-    : L I S T
-    ;
-
-STATUS
-    : S T A T U S
+URL
+    : U R L
     ;
 
 HOST
@@ -101,4 +81,16 @@ PASSWORD
 
 NAME
     : N A M E
+    ;
+
+PROPERTIES
+    : P R O P E R T I E S
+    ;
+
+VARIABLE
+    : V A R I A B L E
+    ;
+
+HINT
+    : H I N T
     ;

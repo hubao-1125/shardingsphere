@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.infra.binder.segment.table;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.ToString;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.ColumnProjection;
@@ -26,11 +27,11 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Sim
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Tables context.
@@ -39,17 +40,25 @@ import java.util.stream.Collectors;
 @ToString
 public final class TablesContext {
     
-    private final Collection<SimpleTableSegment> tables;
+    private final Collection<SimpleTableSegment> originalTables = new LinkedList<>();
+    
+    private final Map<String, SimpleTableSegment> uniqueTables = new HashMap<>();
+    
+    private final Collection<String> schemaNames = new HashSet<>();
     
     public TablesContext(final SimpleTableSegment tableSegment) {
         this(null == tableSegment ? Collections.emptyList() : Collections.singletonList(tableSegment));
     }
     
     public TablesContext(final Collection<SimpleTableSegment> tableSegments) {
-        Collection<SimpleTableSegment> actualTables = new LinkedList<>(tableSegments);
-        Set<String> tableSets = new HashSet<>(actualTables.size(), 1);
-        actualTables.removeIf(each -> !tableSets.add(each.getTableName().getIdentifier().getValue()));
-        tables = actualTables;
+        if (tableSegments.isEmpty()) {
+            return;
+        }
+        for (SimpleTableSegment each : tableSegments) {
+            originalTables.add(each);
+            uniqueTables.putIfAbsent(each.getTableName().getIdentifier().getValue(), each);
+            each.getOwner().ifPresent(optional -> schemaNames.add(optional.getIdentifier().getValue()));
+        }
     }
     
     /**
@@ -58,8 +67,7 @@ public final class TablesContext {
      * @return table names
      */
     public Collection<String> getTableNames() {
-        return tables.stream().map(each -> each.getTableName().getIdentifier().getValue()).collect(
-                Collectors.toSet());
+        return uniqueTables.keySet();
     }
     
     /**
@@ -70,8 +78,8 @@ public final class TablesContext {
      * @return table name
      */
     public Optional<String> findTableName(final ColumnSegment column, final ShardingSphereSchema schema) {
-        if (1 == tables.size()) {
-            return Optional.of(tables.iterator().next().getTableName().getIdentifier().getValue());
+        if (1 == uniqueTables.size()) {
+            return Optional.of(uniqueTables.keySet().iterator().next());
         }
         if (column.getOwner().isPresent()) {
             return findTableNameFromSQL(column.getOwner().get().getIdentifier().getValue());
@@ -87,8 +95,8 @@ public final class TablesContext {
      * @return table name
      */
     public Optional<String> findTableName(final ColumnProjection column, final ShardingSphereSchema schema) {
-        if (1 == tables.size()) {
-            return Optional.of(tables.iterator().next().getTableName().getIdentifier().getValue());
+        if (1 == uniqueTables.size()) {
+            return Optional.of(uniqueTables.keySet().iterator().next());
         }
         if (null != column.getOwner()) {
             return findTableNameFromSQL(column.getOwner());
@@ -102,20 +110,30 @@ public final class TablesContext {
      * @return table name
      */
     public Optional<String> findTableNameFromSQL(final String tableNameOrAlias) {
-        for (SimpleTableSegment each : tables) {
-            if (tableNameOrAlias.equalsIgnoreCase(each.getTableName().getIdentifier().getValue()) || tableNameOrAlias.equals(each.getAlias().orElse(null))) {
-                return Optional.of(each.getTableName().getIdentifier().getValue());
+        for (String each : uniqueTables.keySet()) {
+            if (tableNameOrAlias.equalsIgnoreCase(each) || tableNameOrAlias.equalsIgnoreCase(uniqueTables.get(each).getAlias().orElse(null))) {
+                return Optional.of(each);
             }
         }
         return Optional.empty();
     }
     
     private Optional<String> findTableNameFromMetaData(final String columnName, final ShardingSphereSchema schema) {
-        for (SimpleTableSegment each : tables) {
-            if (schema.containsColumn(each.getTableName().getIdentifier().getValue(), columnName)) {
-                return Optional.of(each.getTableName().getIdentifier().getValue());
+        for (String each : uniqueTables.keySet()) {
+            if (schema.containsColumn(each, columnName)) {
+                return Optional.of(each);
             }
         }
         return Optional.empty();
+    }
+    
+    /**
+     * Get schema name.
+     *
+     * @return schema name
+     */
+    public Optional<String> getSchemaName() {
+        Preconditions.checkState(schemaNames.size() <= 1, "Can not support multiple different schema.");
+        return schemaNames.stream().findFirst();
     }
 }

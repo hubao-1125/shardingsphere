@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.governance.core.registry;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.governance.repository.spi.RegistryCenterRepository;
+import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 import org.apache.shardingsphere.infra.eventbus.ShardingSphereEventBus;
 import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 
@@ -34,20 +34,20 @@ public final class GovernanceWatcherFactory {
         ShardingSphereServiceLoader.register(GovernanceWatcher.class);
     }
     
-    private final RegistryCenterRepository repository;
-    
-    private final Collection<String> schemaNames;
+    private final ClusterPersistRepository repository;
     
     /**
      * Watch listeners.
+     * 
+     * @param schemaNames schema names
      */
-    public void watchListeners() {
+    public void watchListeners(final Collection<String> schemaNames) {
         for (GovernanceWatcher<?> each : ShardingSphereServiceLoader.getSingletonServiceInstances(GovernanceWatcher.class)) {
-            watch(each);
+            watch(schemaNames, each);
         }
     }
     
-    private void watch(final GovernanceWatcher<?> listener) {
+    private void watch(final Collection<String> schemaNames, final GovernanceWatcher<?> listener) {
         for (String each : listener.getWatchingKeys(schemaNames)) {
             watch(each, listener);
         }

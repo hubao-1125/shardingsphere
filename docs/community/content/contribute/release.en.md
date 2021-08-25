@@ -499,6 +499,7 @@ docker tag e9ea51023687 apache/sharding-proxy:${RELEASE.VERSION}
 5.4 Publish Docker Image
 
 ```shell
+docker login
 docker push apache/sharding-proxy:latest
 docker push apache/sharding-proxy:${RELEASE_VERSION}
 ```
@@ -542,7 +543,7 @@ Hi all,
 
 Apache ShardingSphere Team is glad to announce the new release of Apache ShardingSphere ${RELEASE.VERSION}.
 
-ShardingSphere is an open-source ecosystem consisted of a set of distributed database solutions, including 2 independent products, ShardingSphere-JDBC & ShardingSphere-Proxy.
+ShardingSphere is an open-source ecosystem consisting of a set of distributed database solutions, including 2 independent products, ShardingSphere-JDBC & ShardingSphere-Proxy.
 They both provide functions of data scale out, distributed transaction and distributed governance, applicable in a variety of situations such as Java isomorphism and heterogeneous language.
 Apache ShardingSphere aiming at reasonably making full use of the computation and storage capacity of existed database in distributed system, rather than a totally new database.
 As the cornerstone of enterprises, relational database still takes a huge market share.

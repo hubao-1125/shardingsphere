@@ -22,8 +22,8 @@ import org.apache.shardingsphere.governance.core.registry.GovernanceWatcher;
 import org.apache.shardingsphere.governance.core.registry.GovernanceEvent;
 import org.apache.shardingsphere.governance.core.lock.event.LockNotificationEvent;
 import org.apache.shardingsphere.governance.core.lock.event.LockReleasedEvent;
-import org.apache.shardingsphere.governance.repository.api.listener.DataChangedEvent;
-import org.apache.shardingsphere.governance.repository.api.listener.DataChangedEvent.Type;
+import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent;
+import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent.Type;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,9 +48,9 @@ public final class LockChangedWatcher implements GovernanceWatcher<GovernanceEve
     @Override
     public Optional<GovernanceEvent> createGovernanceEvent(final DataChangedEvent event) {
         if (!event.getKey().equals(LockNode.getLockRootNodePath()) && LockNode.getLockName(event.getKey()).isPresent()) {
-            if (event.getType() == Type.ADDED) {
+            if (Type.ADDED == event.getType()) {
                 return Optional.of(new LockNotificationEvent(LockNode.getLockName(event.getKey()).get()));
-            } else if (event.getType() == Type.DELETED) {
+            } else if (Type.DELETED == event.getType()) {
                 return Optional.of(new LockReleasedEvent(LockNode.getLockName(event.getKey()).get()));
             }
         }
