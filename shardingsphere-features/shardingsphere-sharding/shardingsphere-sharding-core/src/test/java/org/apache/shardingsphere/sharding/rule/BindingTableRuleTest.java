@@ -50,7 +50,7 @@ public final class BindingTableRuleTest {
     
     @Test
     public void assertGetBindingActualTablesSuccess() {
-        assertThat(createBindingTableRule().getBindingActualTable("ds1", "Sub_Logic_Table", "table_1"), is("sub_table_1"));
+        assertThat(createBindingTableRule().getBindingActualTable("ds1", "Sub_Logic_Table", "table_1"), is("SUB_TABLE_1"));
     }
     
     @Test(expected = ShardingSphereConfigurationException.class)
@@ -80,7 +80,7 @@ public final class BindingTableRuleTest {
     
     private BindingTableRule createBindingTableRule() {
         Map<String, TableRule> tableRules = Stream.of(createTableRule(), createSubTableRule())
-                .collect(Collectors.toMap(TableRule::getLogicTable, Function.identity(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
+                .collect(Collectors.toMap(each -> each.getLogicTable().toLowerCase(), Function.identity(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
         BindingTableRule result = new BindingTableRule();
         result.getTableRules().putAll(tableRules);
         return result;
@@ -91,6 +91,6 @@ public final class BindingTableRuleTest {
     }
     
     private TableRule createSubTableRule() {
-        return new TableRule(new ShardingTableRuleConfiguration("SUB_LOGIC_TABLE", "ds${0..1}.sub_table_${0..1}"), Arrays.asList("ds0", "ds1"), null);
+        return new TableRule(new ShardingTableRuleConfiguration("SUB_LOGIC_TABLE", "ds${0..1}.SUB_TABLE_${0..1}"), Arrays.asList("ds0", "ds1"), null);
     }
 }

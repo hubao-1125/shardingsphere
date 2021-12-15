@@ -19,21 +19,26 @@ package org.apache.shardingsphere.sharding.route.engine.validator.dml;
 
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
-import org.apache.shardingsphere.infra.hint.HintManager;
-import org.apache.shardingsphere.sharding.api.config.strategy.sharding.HintShardingStrategyConfiguration;
+import org.apache.shardingsphere.infra.route.context.RouteContext;
+import org.apache.shardingsphere.infra.route.context.RouteMapper;
+import org.apache.shardingsphere.infra.route.context.RouteUnit;
 import org.apache.shardingsphere.sharding.route.engine.condition.ShardingCondition;
 import org.apache.shardingsphere.sharding.route.engine.condition.ShardingConditions;
 import org.apache.shardingsphere.sharding.route.engine.condition.value.ListShardingConditionValue;
-import org.apache.shardingsphere.sharding.route.engine.condition.value.RangeShardingConditionValue;
 import org.apache.shardingsphere.sharding.route.engine.condition.value.ShardingConditionValue;
 import org.apache.shardingsphere.sharding.route.engine.validator.ShardingStatementValidator;
-import org.apache.shardingsphere.sharding.rule.BindingTableRule;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.apache.shardingsphere.sharding.rule.TableRule;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.AssignmentSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.util.SafeNumberOperationUtil;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -57,69 +62,91 @@ public abstract class ShardingDMLStatementValidator<T extends SQLStatement> impl
         }
     }
     
-    protected boolean checkSubqueryShardingValues(final ShardingRule shardingRule, final SQLStatementContext sqlStatementContext, final ShardingConditions shardingConditions) {
-        for (String each : sqlStatementContext.getTablesContext().getTableNames()) {
-            Optional<TableRule> tableRule = shardingRule.findTableRule(each);
-            if (tableRule.isPresent() && isRoutingByHint(shardingRule, tableRule.get())
-                && !HintManager.getDatabaseShardingValues(each).isEmpty() && !HintManager.getTableShardingValues(each).isEmpty()) {
-                return false;
-            }
-        }
-        return shardingConditions.getConditions().size() > 1 && !isSameShardingCondition(shardingRule, shardingConditions);
-    }
-    
-    private boolean isRoutingByHint(final ShardingRule shardingRule, final TableRule tableRule) {
-        return shardingRule.getDatabaseShardingStrategyConfiguration(tableRule) instanceof HintShardingStrategyConfiguration
-            && shardingRule.getTableShardingStrategyConfiguration(tableRule) instanceof HintShardingStrategyConfiguration;
-    }
-    
-    private boolean isSameShardingCondition(final ShardingRule shardingRule, final ShardingConditions shardingConditions) {
-        ShardingCondition example = shardingConditions.getConditions().remove(shardingConditions.getConditions().size() - 1);
-        for (ShardingCondition each : shardingConditions.getConditions()) {
-            if (!isSameShardingCondition(shardingRule, example, each)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    private boolean isSameShardingCondition(final ShardingRule shardingRule, final ShardingCondition shardingCondition1, final ShardingCondition shardingCondition2) {
-        if (shardingCondition1.getValues().size() != shardingCondition2.getValues().size()) {
+    /**
+     * Judge whether is same route context or not.
+     * 
+     * @param routeContext route context
+     * @param subRouteContext  sub route context
+     * @return whether is same route context or not
+     */
+    protected boolean isSameRouteContext(final RouteContext routeContext, final RouteContext subRouteContext) {
+        if (routeContext.getRouteUnits().size() != subRouteContext.getRouteUnits().size()) {
             return false;
         }
-        for (int i = 0; i < shardingCondition1.getValues().size(); i++) {
-            ShardingConditionValue shardingConditionValue1 = shardingCondition1.getValues().get(i);
-            ShardingConditionValue shardingConditionValue2 = shardingCondition2.getValues().get(i);
-            if (!isSameShardingConditionValue(shardingRule, shardingConditionValue1, shardingConditionValue2)) {
+        Iterator<RouteUnit> routeContextIterator = routeContext.getRouteUnits().iterator();
+        Iterator<RouteUnit> setAssignmentRouteContextIterator = subRouteContext.getRouteUnits().iterator();
+        while (routeContextIterator.hasNext()) {
+            RouteUnit routeUnit = routeContextIterator.next();
+            RouteUnit setAssignmentRouteUnit = setAssignmentRouteContextIterator.next();
+            if (!routeUnit.getDataSourceMapper().getLogicName().equals(setAssignmentRouteUnit.getDataSourceMapper().getLogicName())
+                    || !routeUnit.getDataSourceMapper().getActualName().equals(setAssignmentRouteUnit.getDataSourceMapper().getActualName())) {
+                return false;
+            }
+            if (!isSameTableMapper(routeUnit.getTableMappers(), setAssignmentRouteUnit.getTableMappers())) {
                 return false;
             }
         }
         return true;
     }
     
-    private boolean isSameShardingConditionValue(final ShardingRule shardingRule, final ShardingConditionValue shardingConditionValue1, final ShardingConditionValue shardingConditionValue2) {
-        return isSameLogicTable(shardingRule, shardingConditionValue1, shardingConditionValue2) && shardingConditionValue1.getColumnName().equals(shardingConditionValue2.getColumnName())
-            && isSameValue(shardingConditionValue1, shardingConditionValue2);
-    }
-    
-    private boolean isSameLogicTable(final ShardingRule shardingRule, final ShardingConditionValue shardingValue1, final ShardingConditionValue shardingValue2) {
-        return shardingValue1.getTableName().equals(shardingValue2.getTableName()) || isBindingTable(shardingRule, shardingValue1, shardingValue2);
-    }
-    
-    private boolean isBindingTable(final ShardingRule shardingRule, final ShardingConditionValue shardingValue1, final ShardingConditionValue shardingValue2) {
-        Optional<BindingTableRule> bindingRule = shardingRule.findBindingTableRule(shardingValue1.getTableName());
-        return bindingRule.isPresent() && bindingRule.get().hasLogicTable(shardingValue2.getTableName());
-    }
-    
-    @SuppressWarnings("unchecked")
-    private boolean isSameValue(final ShardingConditionValue shardingConditionValue1, final ShardingConditionValue shardingConditionValue2) {
-        if (shardingConditionValue1 instanceof ListShardingConditionValue && shardingConditionValue2 instanceof ListShardingConditionValue) {
-            return SafeNumberOperationUtil.safeCollectionEquals(
-                ((ListShardingConditionValue) shardingConditionValue1).getValues(), ((ListShardingConditionValue) shardingConditionValue2).getValues());
-        } else if (shardingConditionValue1 instanceof RangeShardingConditionValue && shardingConditionValue2 instanceof RangeShardingConditionValue) {
-            return SafeNumberOperationUtil.safeRangeEquals(
-                ((RangeShardingConditionValue) shardingConditionValue1).getValueRange(), ((RangeShardingConditionValue) shardingConditionValue2).getValueRange());
+    private boolean isSameTableMapper(final Collection<RouteMapper> tableMappers, final Collection<RouteMapper> setAssignmentTableMappers) {
+        if (tableMappers.size() != setAssignmentTableMappers.size()) {
+            return false;
         }
-        return false;
+        Iterator<RouteMapper> tableMapperIterator = tableMappers.iterator();
+        Iterator<RouteMapper> setAssignmentTableMapperIterator = setAssignmentTableMappers.iterator();
+        while (tableMapperIterator.hasNext()) {
+            RouteMapper routeMapper = tableMapperIterator.next();
+            RouteMapper setAssignmentRouteMapper = setAssignmentTableMapperIterator.next();
+            if (!routeMapper.getLogicName().equals(setAssignmentRouteMapper.getLogicName())
+                    || !routeMapper.getActualName().equals(setAssignmentRouteMapper.getActualName())) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Create shardingConditions.
+     * 
+     * @param sqlStatementContext SQL statement context
+     * @param shardingRule shardingRule
+     * @param parameters parameter collection
+     * @return sharding conditions
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    protected Optional<ShardingConditions> createShardingConditions(final SQLStatementContext<?> sqlStatementContext, final ShardingRule shardingRule,
+                                                                    final Collection<AssignmentSegment> assignments, final List<Object> parameters) {
+        List<ShardingConditionValue> values = new LinkedList<>();
+        String tableName = sqlStatementContext.getTablesContext().getTableNames().iterator().next();
+        for (AssignmentSegment each : assignments) {
+            String shardingColumn = each.getColumns().get(0).getIdentifier().getValue();
+            if (shardingRule.isShardingColumn(shardingColumn, tableName)) {
+                Optional<Object> assignmentValue = getShardingColumnAssignmentValue(each, parameters);
+                assignmentValue.ifPresent(optional -> values.add(new ListShardingConditionValue(shardingColumn, tableName, Collections.singletonList(optional))));
+            }
+        }
+        ShardingConditions result = null;
+        if (!values.isEmpty()) {
+            ShardingCondition shardingCondition = new ShardingCondition();
+            shardingCondition.getValues().addAll(values);
+            result = new ShardingConditions(Collections.singletonList(shardingCondition), sqlStatementContext, shardingRule);
+        }
+        return Optional.ofNullable(result);
+    }
+    
+    private Optional<Object> getShardingColumnAssignmentValue(final AssignmentSegment assignmentSegment, final List<Object> parameters) {
+        ExpressionSegment segment = assignmentSegment.getValue();
+        int shardingSetAssignIndex = -1;
+        if (segment instanceof ParameterMarkerExpressionSegment) {
+            shardingSetAssignIndex = ((ParameterMarkerExpressionSegment) segment).getParameterMarkerIndex();
+        }
+        if (segment instanceof LiteralExpressionSegment) {
+            return Optional.of(((LiteralExpressionSegment) segment).getLiterals());
+        }
+        if (-1 == shardingSetAssignIndex || shardingSetAssignIndex > parameters.size() - 1) {
+            return Optional.empty();
+        }
+        return Optional.of(parameters.get(shardingSetAssignIndex));
     }
 }

@@ -81,7 +81,7 @@
                                 </column>
                             </left>
                             <right>
-                                <list-expression start-index="119" stop-index="122">
+                                <list-expression start-index="118" stop-index="123">
                                     <items>
                                         <literal-expression value="1" start-index="119" stop-index="119" />
                                         <parameter-marker-expression value="0" start-index="119" stop-index="119" />
@@ -763,7 +763,7 @@
                                 </column>
                             </left>
                             <right>
-                                <list-expression start-index="119" stop-index="122">
+                                <list-expression start-index="118" stop-index="123">
                                     <items>
                                         <literal-expression value="1" start-index="119" stop-index="119" />
                                         <parameter-marker-expression value="0" start-index="119" stop-index="119" />
@@ -872,7 +872,7 @@
                                 </column>
                             </left>
                             <right>
-                                <list-expression start-index="119" stop-index="122">
+                                <list-expression start-index="118" stop-index="123">
                                     <items>
                                         <literal-expression value="1" start-index="119" stop-index="119" />
                                         <parameter-marker-expression value="0" start-index="119" stop-index="119" />
@@ -2008,6 +2008,33 @@
         <limit literal-start-index="40" literal-stop-index="75" start-index="40" stop-index="74">
             <offset value="0" start-index="47" stop-index="47" literal-start-index="47" literal-stop-index="47"/>
             <row-count value="20" parameter-index="1" literal-start-index="64" literal-stop-index="65" start-index="64" stop-index="64"/>
+        </limit>
+    </select>
+
+    <select sql-case-id="select_pagination_with_limit_offset_and_row_count">
+        <from>
+            <simple-table name="t_order" start-index="30" stop-index="36"/>
+        </from>
+        <projections start-index="7" stop-index="23">
+            <column-projection start-index="7" stop-index="14" name="order_id" />
+            <column-projection start-index="17" stop-index="23" name="user_id" />
+        </projections>
+        <limit start-index="38" stop-index="47">
+            <offset value="1" start-index="44" stop-index="44" />
+            <row-count value="2" start-index="47" stop-index="47" />
+        </limit>
+    </select>
+
+    <select sql-case-id="select_pagination_with_limit_row_count">
+        <from>
+            <simple-table name="t_order" start-index="30" stop-index="36"/>
+        </from>
+        <projections start-index="7" stop-index="23">
+            <column-projection start-index="7" stop-index="14" name="order_id" />
+            <column-projection start-index="17" stop-index="23" name="user_id" />
+        </projections>
+        <limit start-index="38" stop-index="44">
+            <row-count value="2" start-index="44" stop-index="44" />
         </limit>
     </select>
 </sql-parser-test-cases>

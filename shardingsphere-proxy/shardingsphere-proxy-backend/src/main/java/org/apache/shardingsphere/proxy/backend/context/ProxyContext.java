@@ -21,20 +21,16 @@ import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.mode.manager.ContextManager;
-import org.apache.shardingsphere.mode.manager.memory.MemoryContextManager;
-import org.apache.shardingsphere.infra.lock.ShardingSphereLock;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.state.StateContext;
+import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.datasource.JDBCBackendDataSource;
 import org.apache.shardingsphere.proxy.backend.exception.NoDatabaseSelectedException;
+import org.apache.shardingsphere.migration.common.api.ScalingWorker;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Proxy context.
@@ -47,7 +43,7 @@ public final class ProxyContext {
     
     private final JDBCBackendDataSource backendDataSource = new JDBCBackendDataSource();
     
-    private volatile ContextManager contextManager = new MemoryContextManager();
+    private volatile ContextManager contextManager = new ContextManager();
     
     /**
      * Get instance of proxy schema schemas.
@@ -95,17 +91,8 @@ public final class ProxyContext {
      *
      * @return all schema names
      */
-    public List<String> getAllSchemaNames() {
-        return new ArrayList<>(contextManager.getMetaDataContexts().getAllSchemaNames());
-    }
-    
-    /**
-     * Get lock.
-     * 
-     * @return lock
-     */
-    public Optional<ShardingSphereLock> getLock() {
-        return contextManager.getLock();
+    public Collection<String> getAllSchemaNames() {
+        return contextManager.getMetaDataContexts().getAllSchemaNames();
     }
     
     /**
@@ -114,7 +101,7 @@ public final class ProxyContext {
      * @return state context
      */
     public StateContext getStateContext() {
-        return contextManager.getMetaDataContexts().getStateContext();
+        return contextManager.getStateContext();
     }
     
     /**
@@ -131,5 +118,14 @@ public final class ProxyContext {
         }
         result.addAll(contextManager.getMetaDataContexts().getGlobalRuleMetaData().getRules());
         return result;
+    }
+    
+    /**
+     * Check if scaling is enabled.
+     * 
+     * @return true if scaling enabled, false if not
+     */
+    public boolean isScalingEnabled() {
+        return ScalingWorker.isEnabled();
     }
 }

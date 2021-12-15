@@ -27,24 +27,14 @@
     <xsd:element name="rule">
         <xsd:complexType>
             <xsd:sequence>
-                <xsd:element ref="data-source" minOccurs="0" maxOccurs="unbounded" />
-                <xsd:element ref="table" minOccurs="0" maxOccurs="unbounded" />
+                <xsd:element ref="data-source" maxOccurs="unbounded" />
+                <xsd:element ref="shadow-table" minOccurs="0" maxOccurs="unbounded" />
+                <xsd:element ref="default-shadow-algorithm-name" minOccurs="0" maxOccurs="unbounded" />
             </xsd:sequence>
             <xsd:attribute name="id" type="xsd:string" use="required"/>
             <xsd:attribute name="enable" type="xsd:boolean"/>
-            <!-- fixme remove when the api refactoring is complete start -->
-            <xsd:attribute name="column" type="xsd:string" use="required"/>
-            <xsd:attribute name="sourceDataSourceNames" type="list" use="required"/>
-            <xsd:attribute name="shadowDataSourceNames" type="list" use="required"/>
-            <!-- fixme remove when the api refactoring is complete end -->
         </xsd:complexType>
     </xsd:element>
-
-    <!-- fixme remove when the api refactoring is complete start -->
-    <xsd:simpleType name="list">
-        <xsd:list itemType="xsd:string"/>
-    </xsd:simpleType>
-    <!-- fixme remove when the api refactoring is complete end -->
 
     <xsd:element name="data-source">
         <xsd:complexType>
@@ -54,18 +44,25 @@
         </xsd:complexType>
     </xsd:element>
 
-    <xsd:element name="table">
+    <xsd:element name="shadow-table">
         <xsd:complexType>
             <xsd:sequence>
-                <xsd:element ref="table-algorithm" maxOccurs="unbounded" />
+                <xsd:element ref="algorithm" maxOccurs="unbounded" />
             </xsd:sequence>
             <xsd:attribute name="name" type="xsd:string" use="required"/>
+            <xsd:attribute name="data-sources" type="list" use="required"/>
         </xsd:complexType>
     </xsd:element>
 
-    <xsd:element name="table-algorithm">
+    <xsd:element name="algorithm">
         <xsd:complexType>
             <xsd:attribute name="shadow-algorithm-ref" type="xsd:string" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="default-shadow-algorithm-name">
+        <xsd:complexType>
+            <xsd:attribute name="name" type="xsd:string" use="required"/>
         </xsd:complexType>
     </xsd:element>
 
@@ -81,8 +78,13 @@
 
     <xsd:simpleType name="algorithmType">
         <xsd:restriction base="xsd:string">
-            <xsd:enumeration value="COLUMN-REGULAR-MATCH" />
-            <xsd:enumeration value="SIMPLE-NOTE" />
+            <xsd:enumeration value="REGEX_MATCH" />
+            <xsd:enumeration value="VALUE_MATCH" />
+            <xsd:enumeration value="SIMPLE_HINT" />
         </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="list">
+        <xsd:list itemType="xsd:string"/>
     </xsd:simpleType>
 </xsd:schema>

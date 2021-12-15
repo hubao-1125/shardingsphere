@@ -31,11 +31,11 @@
                            http://shardingsphere.apache.org/schema/shardingsphere/mode-repository/standalone/repository.xsd
                            ">
     <context:property-placeholder location="classpath:conf/conf.properties" />
-
+    
     <import resource="included/data-sources-context.xml" />
     <import resource="included/rules-context.xml" />
     
-    <standalone:repository id="local" type="Local" >
+    <standalone:repository id="local" type="File" >
         <props>
             <prop key="path">target</prop>
         </props>
@@ -45,7 +45,7 @@
         <shardingsphere:mode type="Standalone" repository-ref="local" overwrite="true" />
         <props>
             <prop key="sql-show">false</prop>
-            <prop key="executor-size">${executor-size}</prop>
+            <prop key="kernel-executor-size">${kernel-executor-size}</prop>
         </props>
     </shardingsphere:data-source>
     

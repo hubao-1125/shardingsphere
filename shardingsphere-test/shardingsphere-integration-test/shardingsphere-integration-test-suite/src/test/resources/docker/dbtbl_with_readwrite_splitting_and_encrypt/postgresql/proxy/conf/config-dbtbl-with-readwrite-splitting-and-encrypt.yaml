@@ -19,7 +19,7 @@ schemaName: dbtbl_with_readwrite_splitting_and_encrypt
 
 dataSources:
   encrypt_write_ds_0:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_0?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_0
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -28,7 +28,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_write_ds_1:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_1?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_1
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -37,7 +37,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_write_ds_2:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_2?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_2
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -46,7 +46,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_write_ds_3:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_3?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_3
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -55,7 +55,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_write_ds_4:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_4?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_4
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -64,7 +64,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_write_ds_5:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_5?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_5
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -73,7 +73,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_write_ds_6:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_6?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_6
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -82,7 +82,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_write_ds_7:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_7?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_7
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -91,7 +91,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_write_ds_8:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_8?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_8
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -100,7 +100,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_write_ds_9:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_9?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_write_ds_9
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -109,7 +109,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_0:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_0?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_0
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -118,7 +118,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_1:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_1?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_1
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -127,7 +127,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_2:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_2?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_2
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -136,7 +136,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_3:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_3?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_3
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -145,7 +145,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_4:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_4?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_4
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -154,7 +154,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_5:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_5?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_5
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -163,7 +163,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_6:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_6?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_6
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -172,7 +172,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_7:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_7?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_7
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -181,7 +181,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_8:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_8?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_8
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -190,7 +190,7 @@ dataSources:
     maxPoolSize: 2
     minPoolSize: 2
   encrypt_read_ds_9:
-    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_9?serverTimezone=UTC&useSSL=false
+    url: jdbc:postgresql://postgresql.dbtbl_with_readwrite_splitting_and_encrypt.host:5432/encrypt_read_ds_9
     username: root
     password: root
     connectionTimeoutMilliseconds: 30000
@@ -244,6 +244,18 @@ rules:
         standard:
           shardingColumn: item_id
           shardingAlgorithmName: table_inline_item_id
+    t_order_federate_sharding:
+      actualDataNodes: pr_ds_1.t_order_federate_sharding_${0..1}
+      tableStrategy:
+        standard:
+          shardingColumn: order_id_sharding
+          shardingAlgorithmName: table_inline_order_id
+    t_user_encrypt_federate_sharding:
+      actualDataNodes: pr_ds_1.t_user_encrypt_federate_sharding_${0..1}
+      tableStrategy:
+        standard:
+          shardingColumn: user_id
+          shardingAlgorithmName: table_inline_user_id
   bindingTables:
     - t_user,t_user_item,t_user_details
 
@@ -254,10 +266,19 @@ rules:
       type: INLINE
       props:
         algorithm-expression: t_order_item_federate_sharding_${item_id % 2}
+    table_inline_order_id:
+      type: INLINE
+      props:
+        algorithm-expression: t_order_federate_sharding_${order_id_sharding % 2}
+    table_inline_user_id:
+      type: INLINE
+      props:
+        algorithm-expression: t_user_encrypt_federate_sharding_${user_id % 2}
+        allow-range-query-with-inline-sharding: true
 
   keyGenerators:
     constant:
-      type: Constant
+      type: CONSTANT
 
 - !READWRITE_SPLITTING
   dataSources:
@@ -333,4 +354,16 @@ rules:
         number:
           plainColumn: number_plain
           cipherColumn: number_cipher
+          encryptorName: aes_encryptor
+    t_user_encrypt_federate:
+      columns:
+        pwd:
+          plainColumn: plain_pwd
+          cipherColumn: cipher_pwd
+          encryptorName: aes_encryptor
+    t_user_encrypt_federate_sharding:
+      columns:
+        pwd:
+          plainColumn: plain_pwd
+          cipherColumn: cipher_pwd
           encryptorName: aes_encryptor

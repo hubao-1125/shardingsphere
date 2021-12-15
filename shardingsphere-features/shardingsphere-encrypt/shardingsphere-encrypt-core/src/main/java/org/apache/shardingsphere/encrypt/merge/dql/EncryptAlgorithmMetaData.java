@@ -20,12 +20,14 @@ package org.apache.shardingsphere.encrypt.merge.dql;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
-import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.ColumnProjection;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -47,34 +49,54 @@ public final class EncryptAlgorithmMetaData {
      * @return encryptor
      */
     public Optional<EncryptAlgorithm> findEncryptor(final int columnIndex) {
-        List<Projection> expandProjections = selectStatementContext.getProjectionsContext().getExpandProjections();
-        if (expandProjections.isEmpty()) {
+        Optional<ColumnProjection> columnProjection = findColumnProjection(columnIndex);
+        if (!columnProjection.isPresent()) {
             return Optional.empty();
         }
-        return findEncryptor(columnIndex, expandProjections);
+        Map<String, String> columnTableNames = selectStatementContext.getTablesContext().findTableName(Collections.singletonList(columnProjection.get()), schema);
+        Optional<String> tableName = Optional.ofNullable(columnTableNames.get(columnProjection.get().getExpression()));
+        String schemaName = selectStatementContext.getSchemaName();
+        String columnName = columnProjection.get().getName();
+        return tableName.isPresent() ? findEncryptor(schemaName, tableName.get(), columnName) : findEncryptor(schemaName, columnName);
     }
     
-    private Optional<EncryptAlgorithm> findEncryptor(final int columnIndex, final List<Projection> expandProjections) {
-        Projection projection = expandProjections.get(columnIndex - 1);
-        if (projection instanceof ColumnProjection) {
-            String columnName = ((ColumnProjection) projection).getName();
-            Optional<String> tableName = selectStatementContext.getTablesContext().findTableName((ColumnProjection) projection, schema);
-            return tableName.isPresent() ? findEncryptor(tableName.get(), columnName) : findEncryptor(columnName);
-        }
-        return Optional.empty();
+    private Optional<EncryptAlgorithm> findEncryptor(final String schemaName, final String tableName, final String columnName) {
+        return encryptRule.findEncryptor(schemaName, tableName, columnName);
     }
     
-    private Optional<EncryptAlgorithm> findEncryptor(final String tableName, final String columnName) {
-        return encryptRule.findEncryptor(tableName, columnName);
-    }
-    
-    private Optional<EncryptAlgorithm> findEncryptor(final String columnName) {
+    private Optional<EncryptAlgorithm> findEncryptor(final String schemaName, final String columnName) {
         for (String each : selectStatementContext.getTablesContext().getTableNames()) {
-            Optional<EncryptAlgorithm> result = encryptRule.findEncryptor(each, columnName);
+            Optional<EncryptAlgorithm> result = encryptRule.findEncryptor(schemaName, each, columnName);
             if (result.isPresent()) {
                 return result;
             }
         }
         return Optional.empty();
+    }
+    
+    /**
+     * Judge whether table is support QueryWithCipherColumn or not.
+     *
+     * @param columnIndex column index
+     * @return whether table is support QueryWithCipherColumn or not
+     */
+    public boolean isQueryWithCipherColumn(final int columnIndex) {
+        Optional<ColumnProjection> columnProjection = findColumnProjection(columnIndex);
+        Optional<String> tableName = Optional.empty();
+        if (columnProjection.isPresent()) {
+            Map<String, String> columnTableNames = selectStatementContext.getTablesContext().findTableName(Collections.singletonList(columnProjection.get()), schema);
+            tableName = Optional.ofNullable(columnTableNames.get(columnProjection.get().getExpression()));
+        }
+        return encryptRule.isQueryWithCipherColumn(tableName.orElse(""));
+
+    }
+    
+    private Optional<ColumnProjection> findColumnProjection(final int columnIndex) {
+        List<Projection> expandProjections = selectStatementContext.getProjectionsContext().getExpandProjections();
+        if (expandProjections.size() < columnIndex) {
+            return Optional.empty();
+        }
+        Projection projection = expandProjections.get(columnIndex - 1);
+        return projection instanceof ColumnProjection ? Optional.of((ColumnProjection) projection) : Optional.empty();
     }
 }

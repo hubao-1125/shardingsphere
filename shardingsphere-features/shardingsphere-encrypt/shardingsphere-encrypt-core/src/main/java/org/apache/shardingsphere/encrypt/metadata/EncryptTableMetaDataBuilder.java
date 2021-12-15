@@ -21,7 +21,8 @@ import org.apache.shardingsphere.encrypt.constant.EncryptOrder;
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
 import org.apache.shardingsphere.encrypt.rule.EncryptTable;
 import org.apache.shardingsphere.infra.metadata.schema.builder.SchemaBuilderMaterials;
-import org.apache.shardingsphere.infra.metadata.schema.builder.TableMetaDataLoaderEngine;
+import org.apache.shardingsphere.infra.metadata.schema.builder.loader.TableMetaDataLoaderMaterial;
+import org.apache.shardingsphere.infra.metadata.schema.builder.loader.TableMetaDataLoaderEngine;
 import org.apache.shardingsphere.infra.metadata.schema.builder.spi.RuleBasedTableMetaDataBuilder;
 import org.apache.shardingsphere.infra.metadata.schema.builder.util.TableMetaDataUtil;
 import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
@@ -48,9 +49,12 @@ public final class EncryptTableMetaDataBuilder implements RuleBasedTableMetaData
         if (needLoadTables.isEmpty()) {
             return Collections.emptyMap();
         }
-        Collection<TableMetaData> tableMetaDatas = TableMetaDataLoaderEngine.load(TableMetaDataUtil.getDataSourceActualTableGroups(needLoadTables, materials), materials.getDatabaseType(),
-                materials.getDataSourceMap());
-        return tableMetaDatas.stream().collect(Collectors.toMap(TableMetaData::getName, Function.identity(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
+        Collection<TableMetaDataLoaderMaterial> tableMetaDataLoaderMaterials = TableMetaDataUtil.getTableMetaDataLoadMaterial(needLoadTables, materials, false);
+        if (tableMetaDataLoaderMaterials.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Collection<TableMetaData> tableMetaDataList = TableMetaDataLoaderEngine.load(tableMetaDataLoaderMaterials, materials.getDatabaseType());
+        return tableMetaDataList.stream().collect(Collectors.toMap(TableMetaData::getName, Function.identity(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
     }
     
     @Override

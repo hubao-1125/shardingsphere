@@ -18,14 +18,22 @@
 package org.apache.shardingsphere.infra.aware;
 
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.infra.spi.typed.TypedSPI;
+import org.apache.shardingsphere.spi.optional.OptionalSPI;
 
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Data source name aware.
  */
-public interface DataSourceNameAware extends TypedSPI {
+public interface DataSourceNameAware extends OptionalSPI {
+    
+    /**
+     * Get rule.
+     * 
+     * @return ShardingSphere rule
+     */
+    Optional<ShardingSphereRule> getRule();
     
     /**
      * Set rule.

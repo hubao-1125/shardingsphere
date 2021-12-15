@@ -17,23 +17,26 @@
 
 package org.apache.shardingsphere.mode.metadata;
 
-import org.apache.shardingsphere.authority.api.config.AuthorityRuleConfiguration;
+import org.apache.shardingsphere.authority.config.AuthorityRuleConfiguration;
+import org.apache.shardingsphere.authority.rule.AuthorityRule;
+import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
+import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.metadata.user.ShardingSphereUser;
-import org.apache.shardingsphere.mode.persist.PersistService;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.infra.rule.single.SingleTableRule;
 import org.apache.shardingsphere.mode.metadata.fixture.FixtureRule;
 import org.apache.shardingsphere.mode.metadata.fixture.FixtureRuleConfiguration;
-import org.apache.shardingsphere.test.mock.MockedDataSource;
+import org.apache.shardingsphere.mode.metadata.persist.MetaDataPersistService;
+import org.apache.shardingsphere.parser.rule.SQLParserRule;
+import org.apache.shardingsphere.transaction.rule.TransactionRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -46,61 +49,37 @@ import static org.mockito.Mockito.mock;
 public final class MetaDataContextsBuilderTest {
     
     @Test
-    public void assertBuildWithoutConfiguration() throws SQLException {
-        MetaDataContexts actual = new MetaDataContextsBuilder(Collections.emptyMap(), Collections.emptyMap(), null).build(mock(PersistService.class));
-        assertTrue(actual.getAllSchemaNames().isEmpty());
-        assertTrue(actual.getProps().getProps().isEmpty());
-    }
-    
-    @Test
-    public void assertBuildWithConfigurationsButWithoutDataSource() throws SQLException {
-        Properties props = new Properties();
-        props.setProperty(ConfigurationPropertyKey.EXECUTOR_SIZE.getKey(), "1");
-        MetaDataContexts actual = new MetaDataContextsBuilder(Collections.singletonMap("logic_db", Collections.emptyMap()), 
-                Collections.singletonMap("logic_db", Collections.singletonList(new FixtureRuleConfiguration())), props).build(mock(PersistService.class));
-        assertRules(actual);
-        assertTrue(actual.getMetaData("logic_db").getResource().getDataSources().isEmpty());
-        assertThat(actual.getProps().getProps().size(), is(1));
-        assertThat(actual.getProps().getValue(ConfigurationPropertyKey.EXECUTOR_SIZE), is(1));
-    }
-    
-    @Test
-    public void assertBuildWithConfigurationsAndDataSources() throws SQLException {
-        Properties props = new Properties();
-        props.setProperty(ConfigurationPropertyKey.EXECUTOR_SIZE.getKey(), "1");
-        MetaDataContexts actual = new MetaDataContextsBuilder(Collections.singletonMap("logic_db", Collections.singletonMap("ds", new MockedDataSource())),
-                Collections.singletonMap("logic_db", Collections.singletonList(new FixtureRuleConfiguration())), props).build(mock(PersistService.class));
-        assertRules(actual);
-        assertDataSources(actual);
-        assertThat(actual.getProps().getProps().size(), is(1));
-        assertThat(actual.getProps().getValue(ConfigurationPropertyKey.EXECUTOR_SIZE), is(1));
-    }
-
-    @Test
     public void assertBuildWithAuthorityRuleConfigurations() throws SQLException {
         Properties props = new Properties();
-        props.setProperty(ConfigurationPropertyKey.EXECUTOR_SIZE.getKey(), "1");
+        props.setProperty(ConfigurationPropertyKey.KERNEL_EXECUTOR_SIZE.getKey(), "1");
         ShardingSphereUser user = new ShardingSphereUser("root", "root", "");
-        AuthorityRuleConfiguration authorityRuleConfig = new AuthorityRuleConfiguration(Collections.singleton(user), null);
-        MetaDataContexts actual = new MetaDataContextsBuilder(Collections.singletonMap("logic_db", Collections.emptyMap()), 
-                Collections.singletonMap("logic_db", Collections.singletonList(new FixtureRuleConfiguration())), 
-                Collections.singleton(authorityRuleConfig), props).build(mock(PersistService.class));
+        AuthorityRuleConfiguration authorityRuleConfig = new AuthorityRuleConfiguration(Collections.singleton(user),
+                new ShardingSphereAlgorithmConfiguration("ALL_PRIVILEGES_PERMITTED", new Properties()));
+        MetaDataContexts actual = new MetaDataContextsBuilder(Collections.singletonMap("logic_db", Collections.emptyMap()),
+                Collections.singletonMap("logic_db", Collections.singletonList(new FixtureRuleConfiguration())),
+                Collections.singleton(authorityRuleConfig), Collections.singletonMap("logic_db", mock(ShardingSphereSchema.class)),
+                Collections.singletonMap("logic_db", Arrays.asList(mock(FixtureRule.class))), props)
+                .build(mock(MetaDataPersistService.class));
         assertRules(actual);
         assertTrue(actual.getMetaData("logic_db").getResource().getDataSources().isEmpty());
         assertThat(actual.getProps().getProps().size(), is(1));
-        assertThat(actual.getProps().getValue(ConfigurationPropertyKey.EXECUTOR_SIZE), is(1));
+        assertThat(actual.getProps().getValue(ConfigurationPropertyKey.KERNEL_EXECUTOR_SIZE), is(1));
+    }
+    
+    @Test
+    public void assertBuildWithoutGlobalRuleConfigurations() throws SQLException {
+        MetaDataContexts actual = new MetaDataContextsBuilder(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(),
+                Collections.emptyMap(), new Properties())
+                .build(mock(MetaDataPersistService.class));
+        assertThat(actual.getGlobalRuleMetaData().getRules().size(), is(3));
+        assertThat(actual.getGlobalRuleMetaData().getRules().stream().filter(each -> each instanceof AuthorityRule).count(), is(1L));
+        assertThat(actual.getGlobalRuleMetaData().getRules().stream().filter(each -> each instanceof TransactionRule).count(), is(1L));
+        assertThat(actual.getGlobalRuleMetaData().getRules().stream().filter(each -> each instanceof SQLParserRule).count(), is(1L));
     }
     
     private void assertRules(final MetaDataContexts actual) {
         Collection<ShardingSphereRule> rules = actual.getMetaData("logic_db").getRuleMetaData().getRules();
-        assertThat(rules.size(), is(2));
-        Iterator<ShardingSphereRule> iterator = rules.iterator();
-        assertThat(iterator.next(), instanceOf(FixtureRule.class));
-        assertThat(iterator.next(), instanceOf(SingleTableRule.class));
-    }
-    
-    private void assertDataSources(final MetaDataContexts actual) {
-        assertThat(actual.getMetaData("logic_db").getResource().getDataSources().size(), is(1));
-        assertThat(actual.getMetaData("logic_db").getResource().getDataSources().get("ds"), instanceOf(MockedDataSource.class));
+        assertThat(rules.size(), is(1));
+        assertThat(rules.iterator().next(), instanceOf(FixtureRule.class));
     }
 }

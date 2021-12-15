@@ -20,20 +20,20 @@ package org.apache.shardingsphere.scaling.core.executor.importer;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.shardingsphere.scaling.core.common.channel.Channel;
-import org.apache.shardingsphere.scaling.core.common.constant.ScalingConstant;
-import org.apache.shardingsphere.scaling.core.common.datasource.DataSourceManager;
+import org.apache.shardingsphere.data.pipeline.core.datasource.DataSourceManager;
+import org.apache.shardingsphere.data.pipeline.core.ingest.IngestDataChangeType;
+import org.apache.shardingsphere.data.pipeline.core.ingest.channel.Channel;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.Column;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.DataRecord;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.FinishedRecord;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.GroupedDataRecord;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.Record;
+import org.apache.shardingsphere.data.pipeline.core.util.ThreadUtil;
 import org.apache.shardingsphere.scaling.core.common.exception.ScalingTaskExecuteException;
-import org.apache.shardingsphere.scaling.core.common.record.Column;
-import org.apache.shardingsphere.scaling.core.common.record.DataRecord;
-import org.apache.shardingsphere.scaling.core.common.record.FinishedRecord;
-import org.apache.shardingsphere.scaling.core.common.record.GroupedDataRecord;
-import org.apache.shardingsphere.scaling.core.common.record.Record;
 import org.apache.shardingsphere.scaling.core.common.record.RecordUtil;
 import org.apache.shardingsphere.scaling.core.common.sqlbuilder.ScalingSQLBuilder;
 import org.apache.shardingsphere.scaling.core.config.ImporterConfiguration;
-import org.apache.shardingsphere.scaling.core.executor.AbstractScalingExecutor;
-import org.apache.shardingsphere.scaling.core.util.ThreadUtil;
+import org.apache.shardingsphere.schedule.core.executor.AbstractLifecycleExecutor;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
  * Abstract importer.
  */
 @Slf4j
-public abstract class AbstractImporter extends AbstractScalingExecutor implements Importer {
+public abstract class AbstractImporter extends AbstractLifecycleExecutor implements Importer {
     
     private static final DataRecordMerger MERGER = new DataRecordMerger();
     
@@ -60,6 +60,9 @@ public abstract class AbstractImporter extends AbstractScalingExecutor implement
     
     @Setter
     private Channel channel;
+    
+    @Setter
+    private ImporterListener importerListener;
     
     protected AbstractImporter(final ImporterConfiguration importerConfig, final DataSourceManager dataSourceManager) {
         this.importerConfig = importerConfig;
@@ -83,10 +86,16 @@ public abstract class AbstractImporter extends AbstractScalingExecutor implement
     
     @Override
     public final void write() {
+        log.info("importer write");
+        int rowCount = 0;
         while (isRunning()) {
             List<Record> records = channel.fetchRecords(1024, 3);
             if (null != records && !records.isEmpty()) {
+                rowCount += records.size();
                 flush(dataSourceManager.getDataSource(importerConfig.getDataSourceConfig()), records);
+                if (null != importerListener) {
+                    importerListener.recordsImported(records);
+                }
                 if (FinishedRecord.class.equals(records.get(records.size() - 1).getClass())) {
                     channel.ack();
                     break;
@@ -94,6 +103,7 @@ public abstract class AbstractImporter extends AbstractScalingExecutor implement
             }
             channel.ack();
         }
+        log.info("importer write, rowCount={}", rowCount);
     }
     
     private void flush(final DataSource dataSource, final List<Record> buffer) {
@@ -138,13 +148,13 @@ public abstract class AbstractImporter extends AbstractScalingExecutor implement
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
             switch (buffer.get(0).getType()) {
-                case ScalingConstant.INSERT:
+                case IngestDataChangeType.INSERT:
                     executeBatchInsert(connection, buffer);
                     break;
-                case ScalingConstant.UPDATE:
+                case IngestDataChangeType.UPDATE:
                     executeUpdate(connection, buffer);
                     break;
-                case ScalingConstant.DELETE:
+                case IngestDataChangeType.DELETE:
                     executeBatchDelete(connection, buffer);
                     break;
                 default:
@@ -176,7 +186,7 @@ public abstract class AbstractImporter extends AbstractScalingExecutor implement
     
     private void executeUpdate(final Connection connection, final DataRecord record) throws SQLException {
         List<Column> conditionColumns = RecordUtil.extractConditionColumns(record, importerConfig.getShardingColumnsMap().get(record.getTableName()));
-        List<Column> updatedColumns = RecordUtil.extractUpdatedColumns(record);
+        List<Column> updatedColumns = scalingSqlBuilder.extractUpdatedColumns(record.getColumns(), record);
         String updateSql = scalingSqlBuilder.buildUpdateSQL(record, conditionColumns);
         try (PreparedStatement ps = connection.prepareStatement(updateSql)) {
             for (int i = 0; i < updatedColumns.size(); i++) {

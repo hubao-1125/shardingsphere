@@ -30,22 +30,18 @@ import org.apache.curator.framework.api.ExistsBuilder;
 import org.apache.curator.framework.api.GetChildrenBuilder;
 import org.apache.curator.framework.api.ProtectACLCreateModeStatPathAndBytesable;
 import org.apache.curator.framework.api.SetDataBuilder;
-import org.apache.curator.framework.api.WatchesBuilder;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.CuratorCache;
 import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
-import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent.Type;
 import org.apache.shardingsphere.mode.repository.cluster.zookeeper.props.ZookeeperPropertyKey;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.AdditionalAnswers;
@@ -121,12 +117,6 @@ public final class CuratorZookeeperRepositoryTest {
     
     @Mock
     private InterProcessLock interProcessLock;
-    
-    @Mock
-    private Listenable<ConnectionStateListener> listenerListenable;
-    
-    @Mock
-    private WatchesBuilder watchesBuilder;
     
     @Before
     @SneakyThrows
@@ -216,8 +206,6 @@ public final class CuratorZookeeperRepositoryTest {
     
     @Test
     @SneakyThrows
-    @Ignore
-    // TODO fix me
     public void assertWatchUpdatedChangedType() {
         mockCache();
         ChildData oldData = new ChildData("/test/children_updated/1", null, "value1".getBytes());
@@ -227,14 +215,12 @@ public final class CuratorZookeeperRepositoryTest {
         REPOSITORY.watch("/test/children_updated/1", settableFuture::set);
         DataChangedEvent dataChangedEvent = settableFuture.get();
         assertNotNull(dataChangedEvent);
-        assertThat(dataChangedEvent.getType(), CoreMatchers.is(Type.UPDATED));
+        assertThat(dataChangedEvent.getType(), is(Type.UPDATED));
         assertThat(dataChangedEvent.getKey(), is("/test/children_updated/1"));
         assertThat(dataChangedEvent.getValue(), is("value2"));
     }
     
     @Test
-    @Ignore
-    // TODO fix me
     public void assertWatchDeletedChangedType() throws Exception {
         mockCache();
         ChildData oldData = new ChildData("/test/children_deleted/5", null, "value5".getBytes());
@@ -251,8 +237,6 @@ public final class CuratorZookeeperRepositoryTest {
     
     @Test
     @SneakyThrows
-    @Ignore
-    // TODO fix me
     public void assertWatchAddedChangedType() {
         mockCache();
         ChildData data = new ChildData("/test/children_added/4", null, "value4".getBytes());
@@ -266,7 +250,7 @@ public final class CuratorZookeeperRepositoryTest {
         assertThat(dataChangedEvent.getValue(), is("value4"));
     }
     
-    private void mockCache() throws NoSuchFieldException, IllegalAccessException {
+    private void mockCache() throws Exception {
         Field cachesFiled = CuratorZookeeperRepository.class.getDeclaredField("caches");
         cachesFiled.setAccessible(true);
         cachesFiled.set(REPOSITORY, caches);

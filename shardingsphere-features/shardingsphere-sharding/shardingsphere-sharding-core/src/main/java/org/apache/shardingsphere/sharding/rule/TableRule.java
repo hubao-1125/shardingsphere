@@ -25,13 +25,13 @@ import org.apache.shardingsphere.infra.config.exception.ShardingSphereConfigurat
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.datanode.DataNodeUtil;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
-import org.apache.shardingsphere.sharding.algorithm.sharding.inline.InlineExpressionParser;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.keygen.KeyGenerateStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.NoneShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.ShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.sharding.ShardingAutoTableAlgorithm;
+import org.apache.shardingsphere.sharding.support.InlineExpressionParser;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /**
@@ -76,7 +77,7 @@ public final class TableRule {
     private final Map<String, Collection<String>> datasourceToTablesMap = new HashMap<>();
     
     public TableRule(final Collection<String> dataSourceNames, final String logicTableName) {
-        logicTable = logicTableName.toLowerCase();
+        logicTable = logicTableName;
         dataNodeIndexMap = new HashMap<>(dataSourceNames.size(), 1);
         actualDataNodes = generateDataNodes(logicTableName, dataSourceNames);
         actualTables = getActualTables();
@@ -87,7 +88,7 @@ public final class TableRule {
     }
     
     public TableRule(final ShardingTableRuleConfiguration tableRuleConfig, final Collection<String> dataSourceNames, final String defaultGenerateKeyColumn) {
-        logicTable = tableRuleConfig.getLogicTable().toLowerCase();
+        logicTable = tableRuleConfig.getLogicTable();
         List<String> dataNodes = new InlineExpressionParser(tableRuleConfig.getActualDataNodes()).splitAndEvaluate();
         dataNodeIndexMap = new HashMap<>(dataNodes.size(), 1);
         actualDataNodes = isEmptyDataNodes(dataNodes) ? generateDataNodes(tableRuleConfig.getLogicTable(), dataSourceNames) : generateDataNodes(dataNodes, dataSourceNames);
@@ -102,7 +103,7 @@ public final class TableRule {
     
     public TableRule(final ShardingAutoTableRuleConfiguration tableRuleConfig, 
                      final Collection<String> dataSourceNames, final ShardingAutoTableAlgorithm shardingAutoTableAlgorithm, final String defaultGenerateKeyColumn) {
-        logicTable = tableRuleConfig.getLogicTable().toLowerCase();
+        logicTable = tableRuleConfig.getLogicTable();
         databaseShardingStrategyConfig = new NoneShardingStrategyConfiguration();
         tableShardingStrategyConfig = tableRuleConfig.getShardingStrategy();
         List<String> dataNodes = getDataNodes(tableRuleConfig, shardingAutoTableAlgorithm, dataSourceNames);
@@ -137,7 +138,7 @@ public final class TableRule {
     }
     
     private Set<String> getActualTables() {
-        return actualDataNodes.stream().map(DataNode::getTableName).collect(Collectors.toSet());
+        return actualDataNodes.stream().map(DataNode::getTableName).collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
     }
     
     private void addActualTable(final String datasourceName, final String tableName) {

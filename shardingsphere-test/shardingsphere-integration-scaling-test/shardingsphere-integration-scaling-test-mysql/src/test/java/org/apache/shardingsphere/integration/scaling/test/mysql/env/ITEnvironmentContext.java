@@ -79,10 +79,10 @@ public final class ITEnvironmentContext {
     }
     
     private static String createScalingConfiguration(final Map<String, YamlTableRuleConfiguration> tableRules) {
-        JobConfiguration jobConfiguration = new JobConfiguration();
         RuleConfiguration ruleConfiguration = new RuleConfiguration();
         ruleConfiguration.setSource(SourceConfiguration.getDockerConfiguration(tableRules).wrap());
         ruleConfiguration.setTarget(TargetConfiguration.getDockerConfiguration().wrap());
+        JobConfiguration jobConfiguration = new JobConfiguration();
         jobConfiguration.setRuleConfig(ruleConfiguration);
         return new Gson().toJson(jobConfiguration);
     }

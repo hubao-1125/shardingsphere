@@ -20,14 +20,18 @@ package org.apache.shardingsphere.proxy.backend.text.data.impl;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngineFactory;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
-import org.apache.shardingsphere.proxy.backend.exception.RuleNotExistedException;
+import org.apache.shardingsphere.proxy.backend.exception.DatabaseNotExistedException;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
 import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
+import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.data.DatabaseBackendHandler;
 
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Backend handler for broadcast.
@@ -41,22 +45,25 @@ public final class BroadcastDatabaseBackendHandler implements DatabaseBackendHan
     
     private final String sql;
     
-    private final BackendConnection backendConnection;
+    private final ConnectionSession connectionSession;
     
     @Override
     public ResponseHeader execute() throws SQLException {
-        String originalSchema = backendConnection.getSchemaName();
+        List<String> schemaNames = getSchemaNamesWithDataSource().orElseThrow(DatabaseNotExistedException::new);
+        String originalSchema = connectionSession.getSchemaName();
         try {
-            for (String each : ProxyContext.getInstance().getAllSchemaNames()) {
-                backendConnection.setCurrentSchema(each);
-                if (!ProxyContext.getInstance().getMetaData(each).isComplete()) {
-                    throw new RuleNotExistedException();
-                }
-                databaseCommunicationEngineFactory.newTextProtocolInstance(sqlStatementContext, sql, backendConnection).execute();
+            for (String each : schemaNames) {
+                connectionSession.setCurrentSchema(each);
+                databaseCommunicationEngineFactory.newTextProtocolInstance(sqlStatementContext, sql, (JDBCBackendConnection) connectionSession.getBackendConnection()).execute();
             }
         } finally {
-            backendConnection.setCurrentSchema(originalSchema);
+            connectionSession.setCurrentSchema(originalSchema);
         }
         return new UpdateResponseHeader(sqlStatementContext.getSqlStatement());
+    }
+    
+    private Optional<List<String>> getSchemaNamesWithDataSource() {
+        List<String> result = ProxyContext.getInstance().getAllSchemaNames().stream().filter(each -> ProxyContext.getInstance().getMetaData(each).hasDataSource()).collect(Collectors.toList());
+        return Optional.of(result).filter(each -> !each.isEmpty());
     }
 }

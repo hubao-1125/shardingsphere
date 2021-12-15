@@ -26,7 +26,7 @@
 #
 #dataSources:
 #  ds:
-#    url: jdbc:postgresql://127.0.0.1:5432/demo_ds_0?serverTimezone=UTC&useSSL=false
+#    url: jdbc:postgresql://127.0.0.1:5432/demo_ds_0
 #    username: postgres
 #    password: postgres
 #    connectionTimeoutMilliseconds: 30000
@@ -35,7 +35,7 @@
 #    maxPoolSize: 50
 #    minPoolSize: 1
 #  shadow_ds:
-#    url: jdbc:postgresql://127.0.0.1:5432/demo_ds_1?serverTimezone=UTC&useSSL=false
+#    url: jdbc:postgresql://127.0.0.1:5432/demo_ds_1
 #    username: postgres
 #    password: postgres
 #    connectionTimeoutMilliseconds: 30000
@@ -46,13 +46,57 @@
 #
 #rules:
 #- !SHADOW
-#  column: shadow
-#  sourceDataSourceNames:
-#   - ds
-#  shadowDataSourceNames:
-#   - shadow_ds
-#
-#
+#  enable: true
+#  dataSources:
+#    shadowDataSource:
+#      sourceDataSourceName: ds
+#      shadowDataSourceName: shadow_ds
+#  tables:
+#    t_order:
+#      dataSourceNames:
+#        - shadowDataSource
+#      shadowAlgorithmNames:
+#        - user-id-insert-match-algorithm
+#        - user-id-select-match-algorithm
+#    t_order_item:
+#      dataSourceNames:
+#        - shadowDataSource
+#      shadowAlgorithmNames:
+#        - user-id-insert-match-algorithm
+#        - user-id-update-match-algorithm
+#        - user-id-select-match-algorithm
+#    t_address:
+#      dataSourceNames:
+#        - shadowDataSource
+#      shadowAlgorithmNames:
+#        - user-id-insert-match-algorithm
+#        - user-id-select-match-algorithm
+#        - simple-hint-algorithm
+#  shadowAlgorithms:
+#    user-id-insert-match-algorithm:
+#      type: REGEX_MATCH
+#      props:
+#        operation: insert
+#        column: user_id
+#        regex: "[1]"
+#    user-id-update-match-algorithm:
+#      type: REGEX_MATCH
+#      props:
+#        operation: update
+#        column: user_id
+#        regex: "[1]"
+#    user-id-select-match-algorithm:
+#      type: REGEX_MATCH
+#      props:
+#        operation: select
+#        column: user_id
+#        regex: "[1]"
+#    simple-hint-algorithm:
+#      type: SIMPLE_HINT
+#      props:
+#        shadow: true
+#        foo: bar
+
 ######################################################################################################
 #
 # If you want to connect to MySQL, you should manually copy MySQL driver to lib directory.
@@ -83,8 +127,53 @@
 #
 #rules:
 #- !SHADOW
-#  column: shadow
-#  sourceDataSourceNames:
-#   - ds
-#  shadowDataSourceNames:
-#   - shadow_ds
+#  enable: true
+#  dataSources:
+#    shadowDataSource:
+#      sourceDataSourceName: ds
+#      shadowDataSourceName: shadow_ds
+#  tables:
+#    t_order:
+#      dataSourceNames:
+#        - shadowDataSource
+#      shadowAlgorithmNames:
+#        - user-id-insert-match-algorithm
+#        - user-id-select-match-algorithm
+#    t_order_item:
+#      dataSourceNames:
+#        - shadowDataSource
+#      shadowAlgorithmNames:
+#        - user-id-insert-match-algorithm
+#        - user-id-update-match-algorithm
+#        - user-id-select-match-algorithm
+#    t_address:
+#      dataSourceNames:
+#        - shadowDataSource
+#      shadowAlgorithmNames:
+#        - user-id-insert-match-algorithm
+#        - user-id-select-match-algorithm
+#        - simple-hint-algorithm
+#  shadowAlgorithms:
+#    user-id-insert-match-algorithm:
+#      type: REGEX_MATCH
+#      props:
+#        operation: insert
+#        column: user_id
+#        regex: "[1]"
+#    user-id-update-match-algorithm:
+#      type: REGEX_MATCH
+#      props:
+#        operation: update
+#        column: user_id
+#        regex: "[1]"
+#    user-id-select-match-algorithm:
+#      type: REGEX_MATCH
+#      props:
+#        operation: select
+#        column: user_id
+#        regex: "[1]"
+#    simple-hint-algorithm:
+#      type: SIMPLE_HINT
+#      props:
+#        shadow: true
+#        foo: bar

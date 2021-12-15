@@ -30,8 +30,8 @@ import org.apache.shardingsphere.infra.merge.engine.ResultProcessEngine;
 import org.apache.shardingsphere.infra.merge.engine.decorator.ResultDecorator;
 import org.apache.shardingsphere.infra.merge.engine.decorator.impl.TransparentResultDecorator;
 import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.infra.spi.ordered.OrderedSPIRegistry;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.spi.ordered.OrderedSPIRegistry;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.ExplainStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLExplainStatement;
 import org.junit.Test;
@@ -43,6 +43,7 @@ import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -65,7 +66,7 @@ public final class EncryptResultDecoratorEngineTest {
     @Test
     public void assertNewInstanceWithSelectStatement() {
         EncryptResultDecoratorEngine engine = (EncryptResultDecoratorEngine) OrderedSPIRegistry.getRegisteredServices(ResultProcessEngine.class, Collections.singleton(rule)).get(rule);
-        ResultDecorator actual = engine.newInstance(databaseType, schema, rule, mock(ConfigurationProperties.class), mock(SelectStatementContext.class));
+        ResultDecorator actual = engine.newInstance(databaseType, schema, rule, mock(ConfigurationProperties.class), mock(SelectStatementContext.class, RETURNS_DEEP_STUBS));
         assertThat(actual, instanceOf(EncryptDQLResultDecorator.class));
     }
     

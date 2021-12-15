@@ -40,6 +40,8 @@ public enum SQLVisitorRule {
     
     REPLACE("Replace", SQLStatementType.DML),
     
+    COPY("Copy", SQLStatementType.DML),
+    
     CREATE_TABLE("CreateTable", SQLStatementType.DDL),
     
     ALTER_TABLE("AlterTable", SQLStatementType.DDL),
@@ -70,6 +72,8 @@ public enum SQLVisitorRule {
     
     CREATE_DATABASE("CreateDatabase", SQLStatementType.DDL),
 
+    CREATE_DATABASE_LINK("CreateDatabaseLink", SQLStatementType.DDL),
+    
     ALTER_DATABASE("AlterDatabase", SQLStatementType.DDL),
     
     DROP_DATABASE("DropDatabase", SQLStatementType.DDL),
@@ -99,6 +103,8 @@ public enum SQLVisitorRule {
     DROP_SERVER("DropServer", SQLStatementType.DDL),
     
     CREATE_TRIGGER("CreateTrigger", SQLStatementType.DDL),
+
+    ALTER_TRIGGER("AlterTrigger", SQLStatementType.DDL),
     
     DROP_TRIGGER("DropTrigger", SQLStatementType.DDL),
     
@@ -156,6 +162,8 @@ public enum SQLVisitorRule {
     
     BEGIN_TRANSACTION("BeginTransaction", SQLStatementType.TCL),
     
+    BEGIN_DISTRIBUTED_TRANSACTION("BeginDistributedTransaction", SQLStatementType.TCL),
+    
     START_TRANSACTION("StartTransaction", SQLStatementType.TCL),
     
     END("End", SQLStatementType.TCL),
@@ -164,7 +172,11 @@ public enum SQLVisitorRule {
     
     COMMIT("Commit", SQLStatementType.TCL),
     
+    COMMIT_WORK("CommitWork", SQLStatementType.TCL),
+    
     ROLLBACK("Rollback", SQLStatementType.TCL),
+    
+    ROLLBACK_WORK("RollbackWork", SQLStatementType.TCL),
     
     SAVEPOINT("Savepoint", SQLStatementType.TCL),
     
@@ -224,6 +236,14 @@ public enum SQLVisitorRule {
     
     SHOW_TABLES("ShowTables", SQLStatementType.DAL),
     
+    SHOW_EVENTS("ShowEvents", SQLStatementType.DAL),
+    
+    SHOW_CHARACTER_SET("ShowCharacterSet", SQLStatementType.DAL),
+    
+    SHOW_COLLATION("ShowCollation", SQLStatementType.DAL),
+    
+    SHOW_VARIABLES("ShowVariables", SQLStatementType.DAL),
+    
     SHOW_TABLE_STATUS("ShowTableStatus", SQLStatementType.DAL),
     
     SHOW_COLUMNS("ShowColumns", SQLStatementType.DAL),
@@ -234,8 +254,26 @@ public enum SQLVisitorRule {
     
     SHOW_OTHER("ShowOther", SQLStatementType.DAL),
     
-    SHOW("Show", SQLStatementType.DAL),
+    SHOW_REPLICAS("ShowReplicas", SQLStatementType.DAL),
     
+    SHOW_REPLICA_STATUS("ShowReplicaStatus", SQLStatementType.DAL),
+    
+    SHOW_SLAVE_HOSTS("ShowSlaveHosts", SQLStatementType.DAL),
+    
+    SHOW_SLAVE_STATUS("ShowSlaveStatus", SQLStatementType.DAL),
+    
+    SHOW_STATUS("ShowStatus", SQLStatementType.DAL),
+    
+    SHOW("Show", SQLStatementType.DAL),
+
+    SHOW_RELAYLOG_EVENTS("ShowRelaylogEventsStatement", SQLStatementType.DAL),
+
+    SHOW_PROCEDURE_CODE("ShowProcedureCodeStatement", SQLStatementType.DAL),
+    
+    SHOW_OPEN_TABLES("ShowOpenTables", SQLStatementType.DAL),
+
+    SHOW_TRIGGERS("ShowTriggers", SQLStatementType.DAL),
+
     SET_VARIABLE("SetVariable", SQLStatementType.DAL),
     
     SET("Set", SQLStatementType.DAL),
@@ -254,6 +292,46 @@ public enum SQLVisitorRule {
     
     LOAD("Load", SQLStatementType.DAL),
     
+    INSTALL("Install", SQLStatementType.DAL),
+    
+    UNINSTALL("Uninstall", SQLStatementType.DAL),
+    
+    FLUSH("Flush", SQLStatementType.DAL),
+
+    RESTART("Restart", SQLStatementType.DAL),
+    
+    SHUTDOWN("Shutdown", SQLStatementType.DAL),
+
+    CREATE_RESOURCE_GROUP("CreateResourceGroup", SQLStatementType.DAL),
+    
+    SET_RESOURCE_GROUP("SetResourceGroup", SQLStatementType.DAL),
+    
+    BINLOG("Binlog", SQLStatementType.DAL),
+    
+    OPTIMIZE_TABLE("OptimizeTable", SQLStatementType.DAL),
+
+    CLONE("Clone", SQLStatementType.DAL),
+    
+    REPAIR_TABLE("RepairTable", SQLStatementType.DAL),
+    
+    KILL("Kill", SQLStatementType.DAL),
+    
+    RESET("ResetStatement", SQLStatementType.DAL),
+
+    RESET_PERSIST("ResetPersistStatement", SQLStatementType.DAL),
+
+    CACHE_INDEX("CacheIndex", SQLStatementType.DAL),
+    
+    LOAD_INDEX_INFO("LoadIndexInfo", SQLStatementType.DAL),
+    
+    CHECK_TABLE("CheckTable", SQLStatementType.DAL),
+    
+    CHECKSUM_TABLE("ChecksumTable", SQLStatementType.DAL),
+    
+    DROP_RESOURCE_GROUP("DropResourceGroup", SQLStatementType.DAL),
+    
+    ALTER_RESOURCE_GROUP("AlterResourceGroup", SQLStatementType.DAL),
+    
     CALL("Call", SQLStatementType.DML),
     
     CHANGE_MASTER("ChangeMaster", SQLStatementType.RL), 
@@ -262,7 +340,21 @@ public enum SQLVisitorRule {
     
     STOP_SLAVE("StopSlave", SQLStatementType.RL),
 
-    XA("Xa", SQLStatementType.TCL);
+    XA("Xa", SQLStatementType.TCL),
+    
+    ABORT("Abort", SQLStatementType.TCL),
+
+    CREATE_SCHEMA("CreateSchema", SQLStatementType.DDL),
+
+    ALTER_SCHEMA("AlterSchema", SQLStatementType.DDL),
+
+    DROP_SCHEMA("DropSchema", SQLStatementType.DDL),
+
+    CREATE_SERVICE("CreateService", SQLStatementType.DDL),
+
+    ALTER_SERVICE("AlterService", SQLStatementType.DDL),
+
+    DROP_SERVICE("DropService", SQLStatementType.DDL);
 
     private final String name;
     

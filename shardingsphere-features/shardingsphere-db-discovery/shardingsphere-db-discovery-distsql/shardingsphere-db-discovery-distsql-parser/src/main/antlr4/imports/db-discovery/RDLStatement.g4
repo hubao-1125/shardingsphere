@@ -20,19 +20,35 @@ grammar RDLStatement;
 import Keyword, Literals, Symbol;
 
 createDatabaseDiscoveryRule
-    : CREATE DB_DISCOVERY RULE databaseDiscoveryRuleDefinition  (COMMA databaseDiscoveryRuleDefinition)*
+    : CREATE DB_DISCOVERY RULE databaseDiscoveryRule  (COMMA databaseDiscoveryRule)*
     ;
 
 alterDatabaseDiscoveryRule
-    : ALTER DB_DISCOVERY RULE databaseDiscoveryRuleDefinition  (COMMA databaseDiscoveryRuleDefinition)*
+    : ALTER DB_DISCOVERY RULE databaseDiscoveryRule  (COMMA databaseDiscoveryRule)*
     ;
 
 dropDatabaseDiscoveryRule
     : DROP DB_DISCOVERY RULE ruleName (COMMA ruleName)*
     ;
 
+createDatabaseDiscoveryType
+    : CREATE DB_DISCOVERY TYPE databaseDiscoveryTypeDefinition (COMMA databaseDiscoveryTypeDefinition)*
+    ;
+
+databaseDiscoveryRule
+    : (databaseDiscoveryRuleDefinition | databaseDiscoveryRuleConstruction)
+    ;
+
 databaseDiscoveryRuleDefinition
-    : ruleName LP resources COMMA algorithmDefinition RP
+    : ruleName LP resources COMMA typeDefinition COMMA discoveryHeartbeat RP
+    ;
+
+databaseDiscoveryRuleConstruction
+    : ruleName LP resources COMMA TYPE EQ discoveryTypeName COMMA HEARTBEAT EQ discoveryHeartbeatName RP
+    ;
+
+databaseDiscoveryTypeDefinition
+    : discoveryTypeName LP typeDefinition RP
     ;
 
 ruleName
@@ -47,18 +63,30 @@ resourceName
     : IDENTIFIER
     ;
 
-algorithmDefinition
-    : TYPE LP NAME EQ algorithmName (COMMA PROPERTIES LP algorithmProperties? RP)? RP
+typeDefinition
+    : TYPE LP NAME EQ typeName (COMMA PROPERTIES LP typeProperties RP)? RP
     ;
 
-algorithmName
+discoveryHeartbeat
+    : HEARTBEAT LP PROPERTIES LP typeProperties RP RP
+    ;
+
+typeName
     : IDENTIFIER
     ;
 
-algorithmProperties
-    : algorithmProperty (COMMA algorithmProperty)*
+typeProperties
+    : typeProperty (COMMA typeProperty)*
     ;
 
-algorithmProperty
+typeProperty
     : key=(IDENTIFIER | STRING) EQ value=(NUMBER | INT | STRING)
+    ;
+
+discoveryTypeName
+    : IDENTIFIER
+    ;
+    
+discoveryHeartbeatName
+    : IDENTIFIER
     ;

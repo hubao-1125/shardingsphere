@@ -23,13 +23,13 @@
     <parent>
         <artifactId>shardingsphere-standalone-mode-repository</artifactId>
         <groupId>org.apache.shardingsphere</groupId>
-        <version>5.0.0-RC1-SNAPSHOT</version>
+        <version>5.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>shardingsphere-standalone-mode-repository-provider</artifactId>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     
     <modules>
-        <module>shardingsphere-standalone-mode-repository-local</module>
+        <module>shardingsphere-standalone-mode-repository-file</module>
     </modules>
 </project>

@@ -19,32 +19,40 @@ spring:
   shardingsphere:
     rules:
       shadow:
-        column: shadow
-        source-data-source-names: ds,ds1
-        shadow-data-source-names: shadow_ds,shadow_ds1
-
         enable: true
         data-sources:
-          shadow-data-source:
-            source-data-source-name: ds-write-0
-            shadow-data-source-name: ds-write-0-shadow
+          shadow-data-source-0:
+            source-data-source-name: ds
+            shadow-data-source-name: ds-shadow
+          shadow-data-source-1:
+            source-data-source-name: ds1
+            shadow-data-source-name: ds1-shadow
         tables:
           t_order:
+            data-source-names: shadow-data-source-0,shadow-data-source-1
             shadow-algorithm-names:
-              - t-order-user-id-algorithm
-              - t-order-note-algorithm
+              - user-id-regex-match-algorithm
+              - simple-hint-algorithm
           t_user:
+            data-source-names: shadow-data-source-1
             shadow-algorithm-names:
-              - t-order-user-id-algorithm
-              - t-order-note-algorithm
+              - user-id-value-match-algorithm
+              - simple-hint-algorithm
         shadow-algorithms:
-          t-order-user-id-algorithm:
-            type: COLUMN-REGULAR-MATCH
+          user-id-regex-match-algorithm:
+            type: REGEX_MATCH
             props:
+              operation: insert
               column: user_id
-              regex: [a]
-              operation: INSERT
-          t-order-note-algorithm:
-            type: SIMPLE-NOTE
+              regex: "[1]"
+          user-id-value-match-algorithm:
+            type: VALUE_MATCH
+            props:
+              operation: insert
+              column: user_id
+              value: 1
+          simple-hint-algorithm:
+            type: SIMPLE_HINT
             props:
               shadow: true
+              foo: bar

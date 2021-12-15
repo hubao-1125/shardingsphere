@@ -19,18 +19,18 @@ package org.apache.shardingsphere.proxy.backend.communication.jdbc.datasource;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.mode.manager.ContextManager;
-import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.H2DatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
+import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
-import org.apache.shardingsphere.infra.optimize.context.OptimizeContextFactory;
-import org.apache.shardingsphere.mode.persist.PersistService;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
+import org.apache.shardingsphere.mode.metadata.persist.MetaDataPersistService;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.datasource.fixture.CallTimeRecordDataSource;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
-import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
+import org.apache.shardingsphere.transaction.ShardingSphereTransactionManagerEngine;
 import org.apache.shardingsphere.transaction.context.TransactionContexts;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +53,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -70,8 +69,8 @@ public final class JDBCBackendDataSourceTest {
         Field contextManagerField = ProxyContext.getInstance().getClass().getDeclaredField("contextManager");
         contextManagerField.setAccessible(true);
         ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
-        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(PersistService.class), createMetaDataMap(), mock(ShardingSphereRuleMetaData.class),
-                mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mock(OptimizeContextFactory.class));
+        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(MetaDataPersistService.class), createMetaDataMap(), mock(ShardingSphereRuleMetaData.class),
+                mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mock(OptimizerContext.class));
         when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
         TransactionContexts transactionContexts = createTransactionContexts();
         when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
@@ -89,7 +88,7 @@ public final class JDBCBackendDataSourceTest {
     
     private TransactionContexts createTransactionContexts() {
         TransactionContexts result = mock(TransactionContexts.class, RETURNS_DEEP_STUBS);
-        when(result.getEngines().get("schema")).thenReturn(mock(ShardingTransactionManagerEngine.class));
+        when(result.getEngines().get("schema")).thenReturn(mock(ShardingSphereTransactionManagerEngine.class));
         return result;
     }
     
@@ -99,12 +98,6 @@ public final class JDBCBackendDataSourceTest {
             result.put(String.format(DATA_SOURCE_PATTERN, i), new CallTimeRecordDataSource());
         }
         return result;
-    }
-    
-    @Test
-    public void assertGetConnectionFixedOne() throws SQLException {
-        Connection actual = ProxyContext.getInstance().getBackendDataSource().getConnection("schema", String.format(DATA_SOURCE_PATTERN, 1));
-        assertThat(actual, instanceOf(Connection.class));
     }
     
     @Test

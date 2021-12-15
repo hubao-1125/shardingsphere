@@ -20,6 +20,7 @@ package org.apache.shardingsphere.scaling.core.job.position;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.shardingsphere.data.pipeline.core.ingest.position.PositionInitializer;
 import org.apache.shardingsphere.scaling.core.spi.ScalingEntryLoader;
 
 /**

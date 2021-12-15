@@ -24,11 +24,12 @@ import org.apache.shardingsphere.dbdiscovery.api.config.rule.DatabaseDiscoveryDa
 import org.apache.shardingsphere.dbdiscovery.spi.DatabaseDiscoveryType;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
@@ -41,16 +42,19 @@ public final class DatabaseDiscoveryDataSourceRule {
     
     private final List<String> dataSourceNames;
     
+    private final Properties heartbeatProps;
+    
     private final DatabaseDiscoveryType databaseDiscoveryType;
     
     private final Collection<String> disabledDataSourceNames = new HashSet<>();
     
     private String primaryDataSourceName;
     
-    public DatabaseDiscoveryDataSourceRule(final DatabaseDiscoveryDataSourceRuleConfiguration config, final DatabaseDiscoveryType databaseDiscoveryType) {
+    public DatabaseDiscoveryDataSourceRule(final DatabaseDiscoveryDataSourceRuleConfiguration config, final Properties props, final DatabaseDiscoveryType databaseDiscoveryType) {
         checkConfiguration(config);
         name = config.getName();
         dataSourceNames = config.getDataSourceNames();
+        this.heartbeatProps = props;
         this.databaseDiscoveryType = databaseDiscoveryType;
     }
     
@@ -78,17 +82,21 @@ public final class DatabaseDiscoveryDataSourceRule {
     }
     
     /**
-     * Update disabled data source names.
+     * Disable data source.
      *
-     * @param dataSourceName data source name
-     * @param isDisabled is disabled
+     * @param dataSourceName data source name to be disabled
      */
-    public void updateDisabledDataSourceNames(final String dataSourceName, final boolean isDisabled) {
-        if (isDisabled) {
-            disabledDataSourceNames.add(dataSourceName);
-        } else {
-            disabledDataSourceNames.remove(dataSourceName);
-        }
+    public void disableDataSource(final String dataSourceName) {
+        disabledDataSourceNames.add(dataSourceName);
+    }
+    
+    /**
+     * Enable data source.
+     *
+     * @param dataSourceName data source name to be enabled
+     */
+    public void enableDataSource(final String dataSourceName) {
+        disabledDataSourceNames.remove(dataSourceName);
     }
     
     /**
@@ -106,9 +114,10 @@ public final class DatabaseDiscoveryDataSourceRule {
      * @return data source mapper
      */
     public Map<String, Collection<String>> getDataSourceMapper() {
-        Map<String, Collection<String>> result = new HashMap<>(1, 1);
-        Collection<String> actualDataSourceNames = new LinkedList<>(dataSourceNames);
-        result.put(name, actualDataSourceNames);
+        Map<String, Collection<String>> result = new HashMap<>(dataSourceNames.size(), 1);
+        for (String each : dataSourceNames) {
+            result.put(each, Collections.singletonList(each));
+        }
         return result;
     }
 }

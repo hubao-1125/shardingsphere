@@ -18,17 +18,17 @@
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.mode.manager.ContextManager;
-import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.H2DatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
-import org.apache.shardingsphere.infra.optimize.context.OptimizeContextFactory;
-import org.apache.shardingsphere.mode.persist.PersistService;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
+import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
+import org.apache.shardingsphere.mode.metadata.persist.MetaDataPersistService;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.UnknownDatabaseException;
+import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLUseStatement;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,15 +53,15 @@ public final class UseDatabaseExecutorTest {
     private static final String SCHEMA_PATTERN = "schema_%s";
     
     @Mock
-    private BackendConnection backendConnection;
+    private ConnectionSession connectionSession;
     
     @Before
     public void setUp() throws NoSuchFieldException, IllegalAccessException {
         Field contextManagerField = ProxyContext.getInstance().getClass().getDeclaredField("contextManager");
         contextManagerField.setAccessible(true);
         ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
-        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(PersistService.class),
-                getMetaDataMap(), mock(ShardingSphereRuleMetaData.class), mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mock(OptimizeContextFactory.class));
+        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(MetaDataPersistService.class), getMetaDataMap(), 
+                mock(ShardingSphereRuleMetaData.class), mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mock(OptimizerContext.class));
         when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
         contextManagerField.set(ProxyContext.getInstance(), contextManager);
     }
@@ -81,8 +81,8 @@ public final class UseDatabaseExecutorTest {
         MySQLUseStatement useStatement = mock(MySQLUseStatement.class);
         when(useStatement.getSchema()).thenReturn(String.format(SCHEMA_PATTERN, 0));
         UseDatabaseExecutor useSchemaBackendHandler = new UseDatabaseExecutor(useStatement);
-        useSchemaBackendHandler.execute(backendConnection);
-        verify(backendConnection).setCurrentSchema(anyString());
+        useSchemaBackendHandler.execute(connectionSession);
+        verify(connectionSession).setCurrentSchema(anyString());
     }
     
     @Test(expected = UnknownDatabaseException.class)
@@ -90,6 +90,6 @@ public final class UseDatabaseExecutorTest {
         MySQLUseStatement useStatement = mock(MySQLUseStatement.class);
         when(useStatement.getSchema()).thenReturn(String.format(SCHEMA_PATTERN, 10));
         UseDatabaseExecutor useSchemaBackendHandler = new UseDatabaseExecutor(useStatement);
-        useSchemaBackendHandler.execute(backendConnection);
+        useSchemaBackendHandler.execute(connectionSession);
     }
 }

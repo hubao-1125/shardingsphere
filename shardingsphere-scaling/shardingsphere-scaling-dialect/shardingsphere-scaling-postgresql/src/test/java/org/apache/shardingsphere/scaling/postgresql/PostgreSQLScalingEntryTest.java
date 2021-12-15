@@ -17,13 +17,12 @@
 
 package org.apache.shardingsphere.scaling.postgresql;
 
+import org.apache.shardingsphere.data.pipeline.postgresql.ingest.PostgreSQLInventoryDumper;
+import org.apache.shardingsphere.data.pipeline.postgresql.ingest.PostgreSQLPositionInitializer;
+import org.apache.shardingsphere.data.pipeline.postgresql.ingest.PostgreSQLWalDumper;
 import org.apache.shardingsphere.scaling.core.spi.ScalingEntry;
 import org.apache.shardingsphere.scaling.core.spi.ScalingEntryLoader;
 import org.apache.shardingsphere.scaling.postgresql.component.PostgreSQLImporter;
-import org.apache.shardingsphere.scaling.postgresql.component.PostgreSQLInventoryDumper;
-import org.apache.shardingsphere.scaling.postgresql.component.PostgreSQLPositionInitializer;
-import org.apache.shardingsphere.scaling.postgresql.component.PostgreSQLWalDumper;
-import org.apache.shardingsphere.scaling.postgresql.component.checker.PostgreSQLDataConsistencyChecker;
 import org.apache.shardingsphere.scaling.postgresql.component.checker.PostgreSQLDataSourceChecker;
 import org.apache.shardingsphere.scaling.postgresql.component.checker.PostgreSQLEnvironmentChecker;
 import org.junit.Test;
@@ -41,7 +40,6 @@ public final class PostgreSQLScalingEntryTest {
         assertThat(scalingEntry.getPositionInitializerClass(), equalTo(PostgreSQLPositionInitializer.class));
         assertThat(scalingEntry.getEnvironmentCheckerClass(), equalTo(PostgreSQLEnvironmentChecker.class));
         assertThat(scalingEntry.getEnvironmentCheckerClass().newInstance().getDataSourceCheckerClass(), equalTo(PostgreSQLDataSourceChecker.class));
-        assertThat(scalingEntry.getEnvironmentCheckerClass().newInstance().getDataConsistencyCheckerClass(), equalTo(PostgreSQLDataConsistencyChecker.class));
         assertThat(scalingEntry.getImporterClass(), equalTo(PostgreSQLImporter.class));
         assertThat(scalingEntry.getInventoryDumperClass(), equalTo(PostgreSQLInventoryDumper.class));
         assertThat(scalingEntry.getIncrementalDumperClass(), equalTo(PostgreSQLWalDumper.class));

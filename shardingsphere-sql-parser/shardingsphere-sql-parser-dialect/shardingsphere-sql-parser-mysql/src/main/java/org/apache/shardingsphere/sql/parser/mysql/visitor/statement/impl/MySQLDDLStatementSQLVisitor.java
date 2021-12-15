@@ -161,7 +161,7 @@ import java.util.Properties;
  */
 @NoArgsConstructor
 public final class MySQLDDLStatementSQLVisitor extends MySQLStatementSQLVisitor implements DDLSQLVisitor, SQLStatementVisitor {
-
+    
     public MySQLDDLStatementSQLVisitor(final Properties props) {
         super(props);
     }
@@ -193,7 +193,7 @@ public final class MySQLDDLStatementSQLVisitor extends MySQLStatementSQLVisitor 
     @Override
     public ASTNode visitCreateDatabase(final CreateDatabaseContext ctx) {
         MySQLCreateDatabaseStatement result = new MySQLCreateDatabaseStatement();
-        result.setDatabaseName(ctx.schemaName().getText());
+        result.setDatabaseName(new IdentifierValue(ctx.schemaName().getText()).getValue());
         return result;
     }
     
@@ -205,7 +205,7 @@ public final class MySQLDDLStatementSQLVisitor extends MySQLStatementSQLVisitor 
     @Override
     public ASTNode visitDropDatabase(final DropDatabaseContext ctx) {
         MySQLDropDatabaseStatement result = new MySQLDropDatabaseStatement();
-        result.setDatabaseName(ctx.schemaName().getText());
+        result.setDatabaseName(new IdentifierValue(ctx.schemaName().getText()).getValue());
         return result;
     }
     
@@ -305,7 +305,9 @@ public final class MySQLDDLStatementSQLVisitor extends MySQLStatementSQLVisitor 
             if (each instanceof AlterTableDropContext) {
                 AlterTableDropContext alterTableDrop = (AlterTableDropContext) each;
                 if (null != alterTableDrop.CHECK() || null != alterTableDrop.CONSTRAINT()) {
-                    return new DropConstraintDefinitionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (ConstraintSegment) visit(alterTableDrop.identifier()));
+                    ConstraintSegment constraintSegment = new ConstraintSegment(alterTableDrop.identifier().getStart().getStartIndex(), alterTableDrop.identifier().getStop().getStopIndex(),
+                            (IdentifierValue) visit(alterTableDrop.identifier()));
+                    result.getValue().add(new DropConstraintDefinitionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), constraintSegment));
                 } else if (null == alterTableDrop.KEY() && null == alterTableDrop.keyOrIndex()) {
                     result.getValue().add(generateDropColumnDefinitionSegment(alterTableDrop));
                 }

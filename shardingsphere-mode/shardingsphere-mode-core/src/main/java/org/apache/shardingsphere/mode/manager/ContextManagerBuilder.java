@@ -19,7 +19,8 @@ package org.apache.shardingsphere.mode.manager;
 
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
-import org.apache.shardingsphere.infra.spi.typed.TypedSPI;
+import org.apache.shardingsphere.spi.required.RequiredSPI;
+import org.apache.shardingsphere.spi.typed.TypedSPI;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -30,7 +31,7 @@ import java.util.Properties;
 /**
  * Context manager builder.
  */
-public interface ContextManagerBuilder extends TypedSPI {
+public interface ContextManagerBuilder extends TypedSPI, RequiredSPI {
     
     /**
      * Build context manager.
@@ -41,9 +42,11 @@ public interface ContextManagerBuilder extends TypedSPI {
      * @param globalRuleConfigs global rule configurations
      * @param props properties
      * @param isOverwrite whether overwrite to persistence
+     * @param port port                   
      * @return context manager
      * @throws SQLException SQL exception
      */
     ContextManager build(ModeConfiguration modeConfig, Map<String, Map<String, DataSource>> dataSourcesMap,
-                         Map<String, Collection<RuleConfiguration>> schemaRuleConfigs, Collection<RuleConfiguration> globalRuleConfigs, Properties props, boolean isOverwrite) throws SQLException;
+                         Map<String, Collection<RuleConfiguration>> schemaRuleConfigs, Collection<RuleConfiguration> globalRuleConfigs, Properties props, boolean isOverwrite, 
+                         Integer port) throws SQLException;
 }

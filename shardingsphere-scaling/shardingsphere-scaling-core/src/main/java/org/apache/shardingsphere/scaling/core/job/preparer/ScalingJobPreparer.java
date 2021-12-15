@@ -18,22 +18,28 @@
 package org.apache.shardingsphere.scaling.core.job.preparer;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.scaling.core.common.datasource.DataSourceManager;
+import org.apache.shardingsphere.data.pipeline.core.datasource.DataSourceManager;
+import org.apache.shardingsphere.data.pipeline.core.ingest.position.IngestPosition;
+import org.apache.shardingsphere.data.pipeline.core.ingest.position.PositionInitializer;
+import org.apache.shardingsphere.infra.config.datasource.jdbc.config.JDBCDataSourceConfiguration;
 import org.apache.shardingsphere.scaling.core.common.exception.PrepareFailedException;
+import org.apache.shardingsphere.scaling.core.config.JobConfiguration;
 import org.apache.shardingsphere.scaling.core.config.TaskConfiguration;
+import org.apache.shardingsphere.scaling.core.config.internal.JobDataNodeLine;
 import org.apache.shardingsphere.scaling.core.job.JobContext;
 import org.apache.shardingsphere.scaling.core.job.JobStatus;
 import org.apache.shardingsphere.scaling.core.job.check.EnvironmentCheckerFactory;
 import org.apache.shardingsphere.scaling.core.job.check.source.DataSourceChecker;
 import org.apache.shardingsphere.scaling.core.job.position.PositionInitializerFactory;
-import org.apache.shardingsphere.scaling.core.job.position.ScalingPosition;
 import org.apache.shardingsphere.scaling.core.job.preparer.splitter.InventoryTaskSplitter;
+import org.apache.shardingsphere.scaling.core.job.progress.JobProgress;
 import org.apache.shardingsphere.scaling.core.job.task.ScalingTaskFactory;
 import org.apache.shardingsphere.scaling.core.job.task.inventory.InventoryTask;
 
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Scaling job preparer.
@@ -49,32 +55,56 @@ public final class ScalingJobPreparer {
      * @param jobContext job context
      */
     public void prepare(final JobContext jobContext) {
-        try (DataSourceManager dataSourceManager = new DataSourceManager(jobContext.getTaskConfigs())) {
+        prepareTarget(jobContext.getJobConfig());
+        try (DataSourceManager dataSourceManager = new DataSourceManager()) {
+            initDataSourceManager(dataSourceManager, jobContext.getTaskConfigs());
             checkDataSource(jobContext, dataSourceManager);
             initIncrementalTasks(jobContext, dataSourceManager);
             initInventoryTasks(jobContext, dataSourceManager);
+            log.info("prepare, jobId={}, shardingItem={}, inventoryTasks={}, incrementalTasks={}",
+                    jobContext.getJobId(), jobContext.getShardingItem(), jobContext.getInventoryTasks(), jobContext.getIncrementalTasks());
         } catch (final SQLException ex) {
-            jobContext.setStatus(JobStatus.PREPARING_FAILURE);
-            throw new PrepareFailedException("Scaling job preparing failed", ex);
+            log.error("Scaling job preparing failed, jobId={}", jobContext.getJobId());
+            throw new PrepareFailedException("Scaling job preparing failed, jobId=" + jobContext.getJobId(), ex);
         }
+    }
+    
+    private void prepareTarget(final JobConfiguration jobConfig) {
+        DataSourcePreparer dataSourcePreparer = EnvironmentCheckerFactory.getDataSourcePreparer(jobConfig.getHandleConfig().getTargetDatabaseType());
+        if (null == dataSourcePreparer) {
+            log.info("dataSourcePreparer null, ignore prepare target");
+            return;
+        }
+        JobDataNodeLine tablesFirstDataNodes = JobDataNodeLine.unmarshal(jobConfig.getHandleConfig().getTablesFirstDataNodes());
+        PrepareTargetTablesParameter prepareTargetTablesParameter = new PrepareTargetTablesParameter(tablesFirstDataNodes, jobConfig.getRuleConfig());
+        dataSourcePreparer.prepareTargetTables(prepareTargetTablesParameter);
+    }
+    
+    private void initDataSourceManager(final DataSourceManager dataSourceManager, final List<TaskConfiguration> taskConfigs) {
+        for (TaskConfiguration taskConfig : taskConfigs) {
+            JDBCDataSourceConfiguration dataSourceConfig = taskConfig.getDumperConfig().getDataSourceConfig();
+            dataSourceManager.createSourceDataSource(dataSourceConfig);
+        }
+        dataSourceManager.createTargetDataSource(taskConfigs.iterator().next().getImporterConfig().getDataSourceConfig());
     }
     
     private void checkDataSource(final JobContext jobContext, final DataSourceManager dataSourceManager) {
         checkSourceDataSources(jobContext, dataSourceManager);
-        if (null == jobContext.getInitProgress()) {
+        JobProgress initProgress = jobContext.getInitProgress();
+        if (null == initProgress || initProgress.getStatus() == JobStatus.PREPARING_FAILURE) {
             checkTargetDataSources(jobContext, dataSourceManager);
         }
     }
     
     private void checkSourceDataSources(final JobContext jobContext, final DataSourceManager dataSourceManager) {
-        DataSourceChecker dataSourceChecker = EnvironmentCheckerFactory.newInstance(jobContext.getJobConfig().getHandleConfig().getDatabaseType());
+        DataSourceChecker dataSourceChecker = EnvironmentCheckerFactory.newInstance(jobContext.getJobConfig().getHandleConfig().getSourceDatabaseType());
         dataSourceChecker.checkConnection(dataSourceManager.getCachedDataSources().values());
         dataSourceChecker.checkPrivilege(dataSourceManager.getSourceDataSources().values());
         dataSourceChecker.checkVariable(dataSourceManager.getSourceDataSources().values());
     }
     
     private void checkTargetDataSources(final JobContext jobContext, final DataSourceManager dataSourceManager) {
-        DataSourceChecker dataSourceChecker = EnvironmentCheckerFactory.newInstance(jobContext.getJobConfig().getHandleConfig().getDatabaseType());
+        DataSourceChecker dataSourceChecker = EnvironmentCheckerFactory.newInstance(jobContext.getJobConfig().getHandleConfig().getTargetDatabaseType());
         dataSourceChecker.checkTargetTable(dataSourceManager.getTargetDataSources().values(), jobContext.getTaskConfigs().iterator().next().getImporterConfig().getShardingColumnsMap().keySet());
     }
     
@@ -93,10 +123,30 @@ public final class ScalingJobPreparer {
         }
     }
     
-    private ScalingPosition<?> getIncrementalPosition(final JobContext jobContext, final TaskConfiguration taskConfig, final DataSourceManager dataSourceManager) throws SQLException {
+    private IngestPosition<?> getIncrementalPosition(final JobContext jobContext, final TaskConfiguration taskConfig, final DataSourceManager dataSourceManager) throws SQLException {
         if (null != jobContext.getInitProgress()) {
-            return jobContext.getInitProgress().getIncrementalPosition(taskConfig.getDumperConfig().getDataSourceName());
+            Optional<IngestPosition<?>> positionOptional = jobContext.getInitProgress().getIncrementalPosition(taskConfig.getDumperConfig().getDataSourceName());
+            if (positionOptional.isPresent()) {
+                return positionOptional.get();
+            }
         }
-        return PositionInitializerFactory.newInstance(taskConfig.getHandleConfig().getDatabaseType()).init(dataSourceManager.getDataSource(taskConfig.getDumperConfig().getDataSourceConfig()));
+        return PositionInitializerFactory.newInstance(taskConfig.getHandleConfig().getSourceDatabaseType()).init(dataSourceManager.getDataSource(taskConfig.getDumperConfig().getDataSourceConfig()));
+    }
+    
+    /**
+     * Do cleanup work for scaling job.
+     *
+     * @param jobContext job context
+     */
+    public void cleanup(final JobContext jobContext) {
+        try (DataSourceManager dataSourceManager = new DataSourceManager()) {
+            initDataSourceManager(dataSourceManager, jobContext.getTaskConfigs());
+            for (TaskConfiguration each : jobContext.getTaskConfigs()) {
+                PositionInitializer positionInitializer = PositionInitializerFactory.newInstance(each.getHandleConfig().getSourceDatabaseType());
+                positionInitializer.destroy(dataSourceManager.getDataSource(each.getDumperConfig().getDataSourceConfig()));
+            }
+        } catch (final SQLException ex) {
+            log.warn("Scaling job destroying failed", ex);
+        }
     }
 }

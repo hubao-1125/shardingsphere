@@ -41,15 +41,18 @@ import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.DataTy
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.DataTypeNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.ExprContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.FunctionCallContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.FunctionContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.HexadecimalLiteralsContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.IdentifierContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.IndexNameContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.IndextypeNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.LiteralsContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.NullValueLiteralsContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.NumberLiteralsContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.OrderByClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.OrderByItemContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.OwnerContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.PackageNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.ParameterMarkerContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.PredicateContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.RegularFunctionContext;
@@ -60,16 +63,21 @@ import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.String
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.SynonymNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.TableNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.TableNamesContext;
+import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.TypeNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.UnreservedWordContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.ViewNameContext;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.AggregationType;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.OrderDirection;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.ConstraintSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndextypeSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.packages.PackageSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.type.TypeSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BetweenExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.FunctionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.InExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ListExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.NotExpression;
@@ -107,6 +115,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 /**
  * Oracle Statement SQL visitor.
@@ -237,6 +246,26 @@ public abstract class OracleStatementSQLVisitor extends OracleStatementBaseVisit
     @Override
     public final ASTNode visitIndexName(final IndexNameContext ctx) {
         return new IndexSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (IdentifierValue) visit(ctx.name()));
+    }
+
+    @Override
+    public final ASTNode visitFunction(final FunctionContext ctx) {
+        return new FunctionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ((IdentifierValue) visit(ctx.name())).getValue(), ctx.getText());
+    }
+    
+    @Override
+    public final ASTNode visitPackageName(final PackageNameContext ctx) {
+        return new PackageSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (IdentifierValue) visit(ctx.name()));
+    }
+    
+    @Override
+    public final ASTNode visitTypeName(final TypeNameContext ctx) {
+        return new TypeSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (IdentifierValue) visit(ctx.name()));
+    }
+    
+    @Override
+    public final ASTNode visitIndextypeName(final IndextypeNameContext ctx) {
+        return new IndextypeSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (IdentifierValue) visit(ctx.name()));
     }
     
     @Override
@@ -438,7 +467,7 @@ public abstract class OracleStatementSQLVisitor extends OracleStatementBaseVisit
     public final ASTNode visitAggregationFunction(final AggregationFunctionContext ctx) {
         String aggregationType = ctx.aggregationFunctionName().getText();
         return AggregationType.isAggregationType(aggregationType)
-                ? createAggregationSegment(ctx, aggregationType) : new ExpressionProjectionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getText());
+                ? createAggregationSegment(ctx, aggregationType) : new ExpressionProjectionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), getOriginalText(ctx));
     }
     
     private ASTNode createAggregationSegment(final AggregationFunctionContext ctx, final String aggregationType) {
@@ -463,26 +492,38 @@ public abstract class OracleStatementSQLVisitor extends OracleStatementBaseVisit
         if (null != ctx.castFunction()) {
             return visit(ctx.castFunction());
         }
-        return new ExpressionProjectionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getText());
+        if (null != ctx.charFunction()) {
+            return visit(ctx.charFunction());
+        }
+        return new FunctionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getChild(0).getChild(0).getText(), getOriginalText(ctx));
     }
     
     @Override
     public final ASTNode visitCastFunction(final CastFunctionContext ctx) {
         calculateParameterCount(Collections.singleton(ctx.expr()));
-        return new ExpressionProjectionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getText());
+        FunctionSegment result = new FunctionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.CAST().getText(), getOriginalText(ctx));
+        ASTNode exprSegment = visit(ctx.expr());
+        if (exprSegment instanceof ColumnSegment) {
+            result.getParameters().add((ColumnSegment) exprSegment);
+        } else if (exprSegment instanceof LiteralExpressionSegment) {
+            result.getParameters().add((LiteralExpressionSegment) exprSegment);
+        }
+        result.getParameters().add((DataTypeSegment) visit(ctx.dataType()));
+        return result;
     }
     
     @Override
     public final ASTNode visitCharFunction(final CharFunctionContext ctx) {
         calculateParameterCount(ctx.expr());
-        return new ExpressionProjectionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getText());
+        return new FunctionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.CHAR().getText(), getOriginalText(ctx));
     }
     
     @Override
     public final ASTNode visitRegularFunction(final RegularFunctionContext ctx) {
-        calculateParameterCount(ctx.expr());
-        String text = ctx.start.getInputStream().getText(new Interval(ctx.start.getStartIndex(), ctx.stop.getStopIndex()));
-        return new ExpressionProjectionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), text);
+        FunctionSegment result = new FunctionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.regularFunctionName().getText(), getOriginalText(ctx));
+        Collection<ExpressionSegment> expressionSegments = ctx.expr().stream().map(each -> (ExpressionSegment) visit(each)).collect(Collectors.toList());
+        result.getParameters().addAll(expressionSegments);
+        return result;
     }
     
     @Override
@@ -521,7 +562,8 @@ public abstract class OracleStatementSQLVisitor extends OracleStatementBaseVisit
             return new IndexOrderByItemSegment(ctx.numberLiterals().getStart().getStartIndex(), ctx.numberLiterals().getStop().getStopIndex(),
                     SQLUtil.getExactlyNumber(ctx.numberLiterals().getText(), 10).intValue(), orderDirection);
         }
-        return new ExpressionOrderByItemSegment(ctx.expr().getStart().getStartIndex(), ctx.expr().getStop().getStopIndex(), ctx.expr().getText(), orderDirection);
+        return new ExpressionOrderByItemSegment(ctx.expr().getStart().getStartIndex(), ctx.expr().getStop().getStopIndex(),
+                getOriginalText(ctx.expr()), orderDirection, (ExpressionSegment) visit(ctx.expr()));
     }
     
     @Override
@@ -551,5 +593,15 @@ public abstract class OracleStatementSQLVisitor extends OracleStatementBaseVisit
             result.setScale(Integer.parseInt(numbers.get(1).getText()));
         }
         return result;
+    }
+    
+    /**
+     * Get original text.
+     *
+     * @param ctx context
+     * @return original text
+     */
+    protected String getOriginalText(final ParserRuleContext ctx) {
+        return ctx.start.getInputStream().getText(new Interval(ctx.start.getStartIndex(), ctx.stop.getStopIndex()));
     }
 }

@@ -26,17 +26,21 @@ import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.Co
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.EndContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.ReleaseSavepointContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.RollbackContext;
+import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.AbortContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.RollbackToSavepointContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.SavepointContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.SetTransactionContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.StartTransactionContext;
+import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.SetConstraintsContext;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.tcl.PostgreSQLBeginTransactionStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.tcl.PostgreSQLCommitStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.tcl.PostgreSQLReleaseSavepointStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.tcl.PostgreSQLRollbackStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.tcl.PostgreSQLRollbackToSavepointStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.tcl.PostgreSQLSavepointStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.tcl.PostgreSQLSetConstraintsStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.tcl.PostgreSQLSetTransactionStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.tcl.PostgreSQLStartTransactionStatement;
 
 import java.util.Properties;
 
@@ -71,6 +75,11 @@ public final class PostgreSQLTCLStatementSQLVisitor extends PostgreSQLStatementS
     }
     
     @Override
+    public ASTNode visitAbort(final AbortContext ctx) {
+        return new PostgreSQLRollbackStatement();
+    }
+    
+    @Override
     public ASTNode visitSavepoint(final SavepointContext ctx) {
         String savepointName = ctx.colId().getText();
         PostgreSQLSavepointStatement result = new PostgreSQLSavepointStatement();
@@ -96,11 +105,16 @@ public final class PostgreSQLTCLStatementSQLVisitor extends PostgreSQLStatementS
     
     @Override
     public ASTNode visitStartTransaction(final StartTransactionContext ctx) {
-        return new PostgreSQLBeginTransactionStatement();
+        return new PostgreSQLStartTransactionStatement();
     }
     
     @Override
     public ASTNode visitEnd(final EndContext ctx) {
         return new PostgreSQLCommitStatement();
+    }
+    
+    @Override
+    public ASTNode visitSetConstraints(final SetConstraintsContext ctx) {
+        return new PostgreSQLSetConstraintsStatement();
     }
 }

@@ -23,17 +23,14 @@ import org.apache.shardingsphere.infra.metadata.schema.builder.spi.RuleBasedTabl
 import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.rule.identifier.type.TableContainedRule;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.infra.spi.ordered.OrderedSPIRegistry;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.spi.ordered.OrderedSPIRegistry;
 
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -47,19 +44,6 @@ public final class TableMetaDataBuilder {
     }
     
     /**
-     * Build table meta data.
-     *
-     * @param tableName table name
-     * @param materials schema builder materials
-     * @return table meta data
-     * @throws SQLException SQL exception
-     */
-    public static Optional<TableMetaData> build(final String tableName, final SchemaBuilderMaterials materials) throws SQLException {
-        TableMetaData tableMetaData = load(Collections.singleton(tableName), materials).get(tableName);
-        return Optional.ofNullable(tableMetaData).map(metaData -> decorate(tableName, metaData, materials.getRules()));
-    }
-    
-    /**
      * Load table metadata.
      *
      * @param tableNames table name collection
@@ -69,41 +53,30 @@ public final class TableMetaDataBuilder {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static Map<String, TableMetaData> load(final Collection<String> tableNames, final SchemaBuilderMaterials materials) throws SQLException {
-        Map<String, TableMetaData> result = new LinkedHashMap<>();
+        Map<String, TableMetaData> tableMetaDataMap = new LinkedHashMap<>();
         for (Entry<ShardingSphereRule, RuleBasedTableMetaDataBuilder> entry : OrderedSPIRegistry.getRegisteredServices(RuleBasedTableMetaDataBuilder.class, materials.getRules()).entrySet()) {
             if (entry.getKey() instanceof TableContainedRule) {
                 TableContainedRule rule = (TableContainedRule) entry.getKey();
                 RuleBasedTableMetaDataBuilder<TableContainedRule> builder = entry.getValue();
-                Collection<String> needLoadTables = tableNames.stream().filter(each -> rule.getTables().contains(each)).filter(each -> !result.containsKey(each)).collect(Collectors.toList());
+                Collection<String> needLoadTables = tableNames.stream().filter(each -> rule.getTables().contains(each))
+                        .filter(each -> !tableMetaDataMap.containsKey(each)).collect(Collectors.toList());
                 if (!needLoadTables.isEmpty()) {
-                    result.putAll(decorateTableMetaData(builder.load(tableNames, rule, materials)));
+                    tableMetaDataMap.putAll(builder.load(needLoadTables, rule, materials));
                 }
             }
         }
-        return result;
+        return decorate(tableMetaDataMap, materials.getRules());
     }
     
-    private static Map<String, TableMetaData> decorateTableMetaData(final Map<String, TableMetaData> tableMetaDataMap) {
-        return tableMetaDataMap.entrySet().stream().map(entry -> new TableMetaData(entry.getKey(), entry.getValue().getColumns().values(), entry.getValue().getIndexes().values()))
-                .collect(Collectors.toMap(TableMetaData::getName, Function.identity(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
-    }
-    
-    /**
-     * Decorate table meta data.
-     *
-     * @param tableName table name
-     * @param tableMetaData table meta data
-     * @param rules shardingSphere rules
-     * @return table meta data
-     */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static TableMetaData decorate(final String tableName, final TableMetaData tableMetaData, final Collection<ShardingSphereRule> rules) {
-        TableMetaData result = null;
-        for (Entry<ShardingSphereRule, RuleBasedTableMetaDataBuilder> entry : OrderedSPIRegistry.getRegisteredServices(RuleBasedTableMetaDataBuilder.class, rules).entrySet()) {
-            if (entry.getKey() instanceof TableContainedRule) {
-                result = entry.getValue().decorate(tableName, null == result ? tableMetaData : result, (TableContainedRule) entry.getKey());
+    private static Map<String, TableMetaData> decorate(final Map<String, TableMetaData> tableMetaDataMap, final Collection<ShardingSphereRule> rules) {
+        for (Entry<String, TableMetaData> entry : tableMetaDataMap.entrySet()) {
+            for (Entry<ShardingSphereRule, RuleBasedTableMetaDataBuilder> builderEntry : OrderedSPIRegistry.getRegisteredServices(RuleBasedTableMetaDataBuilder.class, rules).entrySet()) {
+                if (builderEntry.getKey() instanceof TableContainedRule) {
+                    entry.setValue(builderEntry.getValue().decorate(entry.getKey(), entry.getValue(), (TableContainedRule) builderEntry.getKey()));
+                }
             }
         }
-        return Optional.ofNullable(result).orElse(tableMetaData);
+        return tableMetaDataMap;
     }
 }

@@ -92,7 +92,6 @@ import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.Subque
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.SubqueryFactoringClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.TableCollectionExprContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.TableNameContext;
-import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.UnionClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.UpdateContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.UpdateSetClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OracleStatementParser.UpdateSetColumnClauseContext;
@@ -110,6 +109,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.Column
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.InsertColumnsSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.FunctionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.CommonExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.CommonTableExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
@@ -169,7 +169,6 @@ public final class OracleDMLStatementSQLVisitor extends OracleStatementSQLVisito
     @Override
     public ASTNode visitInsert(final InsertContext ctx) {
         // TODO :FIXME, since there is no segment for insertValuesClause, InsertStatement is created by sub rule.
-        // TODO :deal with insert select
         if (null != ctx.insertSingleTable()) {
             OracleInsertStatement result = (OracleInsertStatement) visit(ctx.insertSingleTable());
             return result;
@@ -225,7 +224,6 @@ public final class OracleDMLStatementSQLVisitor extends OracleStatementSQLVisito
         return result;
     }
     
-    @SuppressWarnings("unchecked")
     @Override
     public ASTNode visitInsertValuesClause(final InsertValuesClauseContext ctx) {
         OracleInsertStatement result = new OracleInsertStatement();
@@ -470,19 +468,12 @@ public final class OracleDMLStatementSQLVisitor extends OracleStatementSQLVisito
     
     @Override
     public ASTNode visitSelect(final SelectContext ctx) {
-        // TODO :Unsupported for withClause.
         OracleSelectStatement result = (OracleSelectStatement) visit(ctx.selectSubquery());
         result.setParameterCount(getCurrentParameterIndex());
         if (null != ctx.forUpdateClause()) {
             result.setLock((LockSegment) visit(ctx.forUpdateClause()));
         }
         return result;
-    }
-    
-    @Override
-    public ASTNode visitUnionClause(final UnionClauseContext ctx) {
-        // TODO :Unsupported for union SQL.
-        return visit(ctx.queryBlock(0));
     }
     
     @Override
@@ -723,6 +714,12 @@ public final class OracleDMLStatementSQLVisitor extends OracleStatementSQLVisito
             ((ExpressionProjectionSegment) projection).setAlias(alias);
             return projection;
         }
+        if (projection instanceof FunctionSegment) {
+            FunctionSegment segment = (FunctionSegment) projection;
+            ExpressionProjectionSegment result = new ExpressionProjectionSegment(segment.getStartIndex(), segment.getStopIndex(), segment.getText(), segment);
+            result.setAlias(alias);
+            return result;
+        }
         if (projection instanceof CommonExpressionSegment) {
             CommonExpressionSegment segment = (CommonExpressionSegment) projection;
             ExpressionProjectionSegment result = new ExpressionProjectionSegment(segment.getStartIndex(), segment.getStopIndex(), segment.getText());
@@ -920,8 +917,7 @@ public final class OracleDMLStatementSQLVisitor extends OracleStatementSQLVisito
         for (GroupByItemContext each : ctx.groupByItem()) {
             items.addAll(generateOrderByItemsFromGroupByItem(each));
         }
-        GroupBySegment result = new GroupBySegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), items);
-        return result;
+        return new GroupBySegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), items);
     }
     
     private Collection<OrderByItemSegment> generateOrderByItemsFromGroupByItem(final GroupByItemContext ctx) {
@@ -941,17 +937,14 @@ public final class OracleDMLStatementSQLVisitor extends OracleStatementSQLVisito
         ASTNode expression = visit(ctx);
         if (expression instanceof ColumnSegment) {
             ColumnSegment column = (ColumnSegment) expression;
-            ColumnOrderByItemSegment result = new ColumnOrderByItemSegment(column, OrderDirection.ASC);
-            return result;
+            return new ColumnOrderByItemSegment(column, OrderDirection.ASC);
         }
         if (expression instanceof LiteralExpressionSegment) {
             LiteralExpressionSegment literalExpression = (LiteralExpressionSegment) expression;
-            IndexOrderByItemSegment result = new IndexOrderByItemSegment(literalExpression.getStartIndex(), literalExpression.getStopIndex(),
+            return new IndexOrderByItemSegment(literalExpression.getStartIndex(), literalExpression.getStopIndex(),
                     SQLUtil.getExactlyNumber(literalExpression.getLiterals().toString(), 10).intValue(), OrderDirection.ASC);
-            return result;
         }
-        ExpressionOrderByItemSegment result = new ExpressionOrderByItemSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getText(), OrderDirection.ASC);
-        return result;
+        return new ExpressionOrderByItemSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), getOriginalText(ctx), OrderDirection.ASC, (ExpressionSegment) expression);
     }
     
     private Collection<OrderByItemSegment> generateOrderByItemSegmentsFromRollupCubeClause(final RollupCubeClauseContext ctx) {

@@ -112,11 +112,7 @@ literalsType
     ;
 
 identifier
-    : unicodeEscapes? IDENTIFIER_ uescape? |  unreservedWord 
-    ;
-
-unicodeEscapes
-    : ('U' | 'u') AMPERSAND_
+    : UNICODE_ESCAPE? IDENTIFIER_ uescape? |  unreservedWord 
     ;
 
 uescape
@@ -424,6 +420,8 @@ unreservedWord
     | YES
     | ZONE
     | JSON
+    | PARAM
+    | TABLE
     ;
 
 typeFuncNameKeyword
@@ -546,6 +544,8 @@ aExpr
     | aExpr SLASH_ aExpr
     | aExpr MOD_ aExpr
     | aExpr CARET_ aExpr
+    | aExpr AMPERSAND_ aExpr
+    | aExpr VERTICAL_BAR_ aExpr
     | aExpr qualOp aExpr
     | qualOp aExpr
     | aExpr qualOp

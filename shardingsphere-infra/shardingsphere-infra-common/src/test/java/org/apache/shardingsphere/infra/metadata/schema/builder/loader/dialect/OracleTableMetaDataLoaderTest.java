@@ -21,7 +21,7 @@ import org.apache.shardingsphere.infra.metadata.schema.builder.spi.DialectTableM
 import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
 import org.apache.shardingsphere.infra.metadata.schema.model.IndexMetaData;
 import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -55,21 +55,22 @@ public final class OracleTableMetaDataLoaderTest {
     
     private static final String ALL_INDEXES_SQL = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, INDEX_NAME FROM ALL_INDEXES WHERE OWNER = ? AND TABLE_NAME IN ('tbl')";
     
-    private static final String ALL_TAB_COLUMNS_SQL_CONDITION1 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE , IDENTITY_COLUMN, COLLATION"
-            + " FROM ALL_TAB_COLUMNS WHERE OWNER = ?";
+    private static final String ALL_TAB_COLUMNS_SQL_CONDITION1 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID , IDENTITY_COLUMN, COLLATION"
+            + " FROM ALL_TAB_COLUMNS WHERE OWNER = ? ORDER BY COLUMN_ID";
     
-    private static final String ALL_TAB_COLUMNS_SQL_CONDITION2 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE , IDENTITY_COLUMN FROM ALL_TAB_COLUMNS WHERE OWNER = ?";
+    private static final String ALL_TAB_COLUMNS_SQL_CONDITION2 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID , IDENTITY_COLUMN FROM ALL_TAB_COLUMNS WHERE OWNER = ?"
+            + " ORDER BY COLUMN_ID";
     
-    private static final String ALL_TAB_COLUMNS_SQL_CONDITION3 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE  FROM ALL_TAB_COLUMNS WHERE OWNER = ?";
+    private static final String ALL_TAB_COLUMNS_SQL_CONDITION3 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID  FROM ALL_TAB_COLUMNS WHERE OWNER = ? ORDER BY COLUMN_ID";
     
-    private static final String ALL_TAB_COLUMNS_SQL_CONDITION4 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE , IDENTITY_COLUMN, COLLATION FROM ALL_TAB_COLUMNS"
-            + " WHERE OWNER = ? AND TABLE_NAME IN ('tbl')";
+    private static final String ALL_TAB_COLUMNS_SQL_CONDITION4 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID , IDENTITY_COLUMN, COLLATION FROM ALL_TAB_COLUMNS"
+            + " WHERE OWNER = ? AND TABLE_NAME IN ('tbl') ORDER BY COLUMN_ID";
     
-    private static final String ALL_TAB_COLUMNS_SQL_CONDITION5 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE , IDENTITY_COLUMN FROM ALL_TAB_COLUMNS"
-            + " WHERE OWNER = ? AND TABLE_NAME IN ('tbl')";
+    private static final String ALL_TAB_COLUMNS_SQL_CONDITION5 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID , IDENTITY_COLUMN FROM ALL_TAB_COLUMNS"
+            + " WHERE OWNER = ? AND TABLE_NAME IN ('tbl') ORDER BY COLUMN_ID";
     
-    private static final String ALL_TAB_COLUMNS_SQL_CONDITION6 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE  FROM ALL_TAB_COLUMNS"
-            + " WHERE OWNER = ? AND TABLE_NAME IN ('tbl')";
+    private static final String ALL_TAB_COLUMNS_SQL_CONDITION6 = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID  FROM ALL_TAB_COLUMNS"
+            + " WHERE OWNER = ? AND TABLE_NAME IN ('tbl') ORDER BY COLUMN_ID";
     
     @BeforeClass
     public static void setUp() {
@@ -187,20 +188,20 @@ public final class OracleTableMetaDataLoaderTest {
     
     private ResultSet mockTypeInfoResultSet() throws SQLException {
         ResultSet result = mock(ResultSet.class);
-        when(result.next()).thenReturn(true, true, false);
-        when(result.getString("TYPE_NAME")).thenReturn("int", "varchar");
-        when(result.getInt("DATA_TYPE")).thenReturn(4, 12);
+        when(result.next()).thenReturn(true, true, true, false);
+        when(result.getString("TYPE_NAME")).thenReturn("int", "varchar", "TIMESTAMP");
+        when(result.getInt("DATA_TYPE")).thenReturn(4, 12, 93);
         return result;
     }
     
     private ResultSet mockTableMetaDataResultSet() throws SQLException {
         ResultSet result = mock(ResultSet.class);
-        when(result.next()).thenReturn(true, true, false);
+        when(result.next()).thenReturn(true, true, true, false);
         when(result.getString("TABLE_NAME")).thenReturn("tbl");
-        when(result.getString("COLUMN_NAME")).thenReturn("id", "name");
-        when(result.getString("DATA_TYPE")).thenReturn("int", "varchar");
-        when(result.getString("IDENTITY_COLUMN")).thenReturn("YES", "NO");
-        when(result.getString("COLLATION")).thenReturn("BINARY_CS", "BINARY_CI");
+        when(result.getString("COLUMN_NAME")).thenReturn("id", "name", "creation_time");
+        when(result.getString("DATA_TYPE")).thenReturn("int", "varchar", "TIMESTAMP(6)");
+        when(result.getString("IDENTITY_COLUMN")).thenReturn("YES", "NO", "NO");
+        when(result.getString("COLLATION")).thenReturn("BINARY_CS", "BINARY_CI", "BINARY_CI");
         return result;
     }
     
@@ -231,7 +232,7 @@ public final class OracleTableMetaDataLoaderTest {
     
     private void assertTableMetaDataMap(final Map<String, TableMetaData> actual) {
         assertThat(actual.size(), is(1));
-        assertThat(actual.get("tbl").getColumns().size(), is(2));
+        assertThat(actual.get("tbl").getColumns().size(), is(3));
         assertThat(actual.get("tbl").getIndexes().size(), is(1));
         assertThat(actual.get("tbl").getIndexes().get("id"), is(new IndexMetaData("id")));
     }

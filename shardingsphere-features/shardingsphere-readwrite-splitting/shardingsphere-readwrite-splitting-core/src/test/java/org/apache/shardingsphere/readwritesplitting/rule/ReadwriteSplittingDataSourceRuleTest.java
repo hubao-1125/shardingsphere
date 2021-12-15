@@ -44,7 +44,8 @@ public final class ReadwriteSplittingDataSourceRuleTest {
     
     @Test(expected = IllegalArgumentException.class)
     public void assertNewReadwriteSplittingDataSourceRuleWithoutPrimaryDataSourceName() {
-        new ReadwriteSplittingDataSourceRule(new ReadwriteSplittingDataSourceRuleConfiguration("ds", "", "", Collections.singletonList("read_ds"), null), new RoundRobinReplicaLoadBalanceAlgorithm());
+        new ReadwriteSplittingDataSourceRule(new ReadwriteSplittingDataSourceRuleConfiguration("ds", "", "", Collections.singletonList("read_ds"), null), 
+                new RoundRobinReplicaLoadBalanceAlgorithm());
     }
     
     @Test(expected = IllegalArgumentException.class)
@@ -54,7 +55,8 @@ public final class ReadwriteSplittingDataSourceRuleTest {
     
     @Test(expected = IllegalArgumentException.class)
     public void assertNewReadwriteSplittingDataSourceRuleWithEmptyReadDataSourceName() {
-        new ReadwriteSplittingDataSourceRule(new ReadwriteSplittingDataSourceRuleConfiguration("ds", "", "write_ds", Collections.emptyList(), null), new RoundRobinReplicaLoadBalanceAlgorithm());
+        new ReadwriteSplittingDataSourceRule(new ReadwriteSplittingDataSourceRuleConfiguration("ds", "", "write_ds", Collections.emptyList(), null), 
+                new RoundRobinReplicaLoadBalanceAlgorithm());
     }
     
     @Test

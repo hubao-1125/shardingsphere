@@ -32,11 +32,11 @@ import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent.Type;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEventListener;
-import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 import org.apache.shardingsphere.mode.repository.cluster.zookeeper.handler.CuratorZookeeperExceptionHandler;
 import org.apache.shardingsphere.mode.repository.cluster.zookeeper.props.ZookeeperProperties;
 import org.apache.shardingsphere.mode.repository.cluster.zookeeper.props.ZookeeperPropertyKey;
@@ -247,13 +247,13 @@ public final class CuratorZookeeperRepository implements ClusterPersistRepositor
                         listener.onChange(new DataChangedEvent(treeCacheListener.getData().getPath(), 
                                 new String(treeCacheListener.getData().getData(), StandardCharsets.UTF_8), changedType));
                     }
-                }).afterInitialized().build();
+                }).build();
             cache.listenable().addListener(curatorCacheListener);
+            start(cache);
         }
     }
     
-    private void addCacheData(final String cachePath) {
-        CuratorCache cache = CuratorCache.build(client, cachePath);
+    private void start(final CuratorCache cache) {
         try {
             cache.start();
             // CHECKSTYLE:OFF
@@ -261,6 +261,10 @@ public final class CuratorZookeeperRepository implements ClusterPersistRepositor
             // CHECKSTYLE:ON
             CuratorZookeeperExceptionHandler.handleException(ex);
         }
+    }
+    
+    private void addCacheData(final String cachePath) {
+        CuratorCache cache = CuratorCache.build(client, cachePath);
         caches.put(cachePath + PATH_SEPARATOR, cache);
     }
     

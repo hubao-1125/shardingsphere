@@ -17,6 +17,7 @@ cobertura.ser
 .settings/
 .project
 .classpath
+.factorypath
 
 # idea ignore
 .idea/
@@ -38,7 +39,8 @@ logs/
 Thumbs.db
 
 # antlr ignore
-src/main/antlr4/imports/**/gen/
+gen/
+*.tokens
 
 # agent build ignore
 /agent/

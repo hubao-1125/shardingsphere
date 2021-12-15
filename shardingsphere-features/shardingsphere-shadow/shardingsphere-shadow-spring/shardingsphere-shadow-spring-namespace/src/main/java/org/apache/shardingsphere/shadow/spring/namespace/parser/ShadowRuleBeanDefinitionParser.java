@@ -33,9 +33,12 @@ import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Shadow rule parser for spring namespace.
@@ -51,10 +54,10 @@ public final class ShadowRuleBeanDefinitionParser extends AbstractBeanDefinition
     @Override
     protected AbstractBeanDefinition parseInternal(final Element element, final ParserContext parserContext) {
         BeanDefinitionBuilder factory = BeanDefinitionBuilder.rootBeanDefinition(AlgorithmProvidedShadowRuleConfiguration.class);
-        addConstructorArgValue(element, factory);
         factory.addPropertyValue("enable", parseShadowEnableConfiguration(element));
         factory.addPropertyValue("dataSources", parseDataSourcesConfiguration(element));
         factory.addPropertyValue("tables", parseShadowTablesConfiguration(element));
+        factory.addPropertyValue("defaultShadowAlgorithmName", parseDefaultShadowAlgorithmName(element));
         factory.addPropertyValue("shadowAlgorithms", ShardingSphereAlgorithmBeanRegistry.getAlgorithmBeanReferences(parserContext, ShadowAlgorithmFactoryBean.class));
         return factory.getBeanDefinition();
     }
@@ -67,15 +70,29 @@ public final class ShadowRuleBeanDefinitionParser extends AbstractBeanDefinition
         List<Element> tableRuleElements = DomUtils.getChildElementsByTagName(element, ShadowRuleBeanDefinitionTag.SHADOW_TABLE_TAG);
         Map<String, BeanDefinition> result = new ManagedMap<>(tableRuleElements.size());
         for (Element each : tableRuleElements) {
-            result.put(each.getAttribute(ShadowRuleBeanDefinitionTag.SHADOW_TABLE_NAME_ATTRIBUTE), parseShadowTableConfiguration(each));
+            result.put(each.getAttribute(ShadowRuleBeanDefinitionTag.SHADOW_NAME_ATTRIBUTE), parseShadowTableConfiguration(each));
         }
         return result;
     }
     
+    private String parseDefaultShadowAlgorithmName(final Element element) {
+        Element defaultShadowAlgorithmElement = DomUtils.getChildElementByTagName(element, ShadowRuleBeanDefinitionTag.SHADOW_DEFAULT_SHADOW_ALGORITHM_NAME);
+        if (null == defaultShadowAlgorithmElement) {
+            return null;
+        }
+        return defaultShadowAlgorithmElement.getAttribute(ShadowRuleBeanDefinitionTag.SHADOW_NAME_ATTRIBUTE);
+    }
+    
     private BeanDefinition parseShadowTableConfiguration(final Element element) {
         BeanDefinitionBuilder factory = BeanDefinitionBuilder.rootBeanDefinition(ShadowTableConfiguration.class);
+        factory.addConstructorArgValue(parseTableDataSourcesAttribute(element));
         factory.addConstructorArgValue(parseShadowAlgorithmNames(element));
         return factory.getBeanDefinition();
+    }
+    
+    private Collection<String> parseTableDataSourcesAttribute(final Element element) {
+        String[] split = element.getAttribute(ShadowRuleBeanDefinitionTag.SHADOW_TABLE_DATA_SOURCE_REFS_ATTRIBUTE).split(",");
+        return Arrays.stream(split).map(String::trim).collect(Collectors.toCollection(LinkedList::new));
     }
     
     private Collection<String> parseShadowAlgorithmNames(final Element element) {
@@ -101,12 +118,5 @@ public final class ShadowRuleBeanDefinitionParser extends AbstractBeanDefinition
         factory.addConstructorArgValue(element.getAttribute(ShadowRuleBeanDefinitionTag.SOURCE_DATA_SOURCE_NAME_ATTRIBUTE));
         factory.addConstructorArgValue(element.getAttribute(ShadowRuleBeanDefinitionTag.SHADOW_DATA_SOURCE_NAME_ATTRIBUTE));
         return factory.getBeanDefinition();
-    }
-    
-    // fixme remove method when the api refactoring is complete
-    private void addConstructorArgValue(final Element element, final BeanDefinitionBuilder factory) {
-        factory.addConstructorArgValue(element.getAttribute(ShadowRuleBeanDefinitionTag.COLUMN_CONFIG_TAG));
-        factory.addConstructorArgValue(element.getAttribute(ShadowRuleBeanDefinitionTag.SOURCE_DATASOURCE_NAMES_TAG).split(","));
-        factory.addConstructorArgValue(element.getAttribute(ShadowRuleBeanDefinitionTag.SHADOW_DATASOURCE_NAMES_TAG).split(","));
     }
 }

@@ -26,7 +26,6 @@ import org.apache.shardingsphere.shadow.yaml.config.datasource.YamlShadowDataSou
 import org.apache.shardingsphere.shadow.yaml.config.table.YamlShadowTableConfiguration;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,14 +35,9 @@ import java.util.Map;
 @Setter
 public final class YamlShadowRuleConfiguration implements YamlRuleConfiguration {
     
-    // fixme remove three fields when the api refactoring is complete
-    private String column;
-    
-    private List<String> sourceDataSourceNames;
-    
-    private List<String> shadowDataSourceNames;
-    
     private boolean enable;
+    
+    private String defaultShadowAlgorithmName;
     
     private Map<String, YamlShadowDataSourceConfiguration> dataSources = new LinkedHashMap<>();
     

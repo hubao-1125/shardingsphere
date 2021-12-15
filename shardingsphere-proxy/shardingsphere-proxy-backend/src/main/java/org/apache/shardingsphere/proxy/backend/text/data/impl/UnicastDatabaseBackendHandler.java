@@ -21,15 +21,17 @@ import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngine;
 import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngineFactory;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.NoDatabaseSelectedException;
 import org.apache.shardingsphere.proxy.backend.exception.RuleNotExistedException;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
+import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.data.DatabaseBackendHandler;
 
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Database backend handler with unicast schema.
@@ -43,18 +45,24 @@ public final class UnicastDatabaseBackendHandler implements DatabaseBackendHandl
     
     private final String sql;
     
-    private final BackendConnection backendConnection;
+    private final ConnectionSession connectionSession;
     
     private DatabaseCommunicationEngine databaseCommunicationEngine;
     
     @Override
     public ResponseHeader execute() throws SQLException {
-        String schemaName = null == backendConnection.getSchemaName() ? getFirstSchemaName() : backendConnection.getSchemaName();
-        if (!ProxyContext.getInstance().getMetaData(schemaName).isComplete()) {
+        String originSchema = connectionSession.getSchemaName();
+        String schemaName = null == originSchema ? getFirstSchemaName() : originSchema;
+        if (!ProxyContext.getInstance().getMetaData(schemaName).hasDataSource()) {
             throw new RuleNotExistedException();
         }
-        databaseCommunicationEngine = databaseCommunicationEngineFactory.newTextProtocolInstance(sqlStatementContext, sql, backendConnection);
-        return databaseCommunicationEngine.execute();
+        try {
+            connectionSession.setCurrentSchema(schemaName);
+            databaseCommunicationEngine = databaseCommunicationEngineFactory.newTextProtocolInstance(sqlStatementContext, sql, (JDBCBackendConnection) connectionSession.getBackendConnection());
+            return databaseCommunicationEngine.execute();
+        } finally {
+            connectionSession.setCurrentSchema(originSchema);
+        }
     }
     
     private String getFirstSchemaName() {
@@ -62,7 +70,11 @@ public final class UnicastDatabaseBackendHandler implements DatabaseBackendHandl
         if (schemaNames.isEmpty()) {
             throw new NoDatabaseSelectedException();
         }
-        return schemaNames.iterator().next();
+        Optional<String> result = schemaNames.stream().filter(each -> ProxyContext.getInstance().getMetaData(each).hasDataSource()).findFirst();
+        if (!result.isPresent()) {
+            throw new RuleNotExistedException();
+        }
+        return result.get();
     }
     
     @Override

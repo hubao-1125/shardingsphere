@@ -29,6 +29,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,9 +44,13 @@ import java.util.stream.Collectors;
  */
 public final class OracleTableMetaDataLoader implements DialectTableMetaDataLoader {
     
-    private static final String TABLE_META_DATA_SQL = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE %s FROM ALL_TAB_COLUMNS WHERE OWNER = ?";
+    private static final String TABLE_META_DATA_SQL_NO_ORDER = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_ID %s FROM ALL_TAB_COLUMNS WHERE OWNER = ?";
     
-    private static final String TABLE_META_DATA_SQL_IN_TABLES = TABLE_META_DATA_SQL + " AND TABLE_NAME IN (%s)";
+    private static final String ORDER_BY_COLUMN_ID = " ORDER BY COLUMN_ID";
+    
+    private static final String TABLE_META_DATA_SQL = TABLE_META_DATA_SQL_NO_ORDER + ORDER_BY_COLUMN_ID;
+    
+    private static final String TABLE_META_DATA_SQL_IN_TABLES = TABLE_META_DATA_SQL_NO_ORDER + " AND TABLE_NAME IN (%s)" + ORDER_BY_COLUMN_ID;
     
     private static final String INDEX_META_DATA_SQL = "SELECT OWNER AS TABLE_SCHEMA, TABLE_NAME, INDEX_NAME FROM ALL_INDEXES WHERE OWNER = ? AND TABLE_NAME IN (%s)";
     
@@ -75,6 +80,7 @@ public final class OracleTableMetaDataLoader implements DialectTableMetaDataLoad
         Map<String, Collection<ColumnMetaData>> result = new HashMap<>();
         try (Connection connection = dataSource.getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(getTableMetaDataSQL(tables, connection.getMetaData()))) {
             Map<String, Integer> dataTypes = DataTypeLoader.load(connection.getMetaData());
+            appendNumberDataType(dataTypes);
             Map<String, Collection<String>> tablePrimaryKeys = loadTablePrimaryKeys(connection, tables);
             preparedStatement.setString(1, connection.getSchema());
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -91,15 +97,27 @@ public final class OracleTableMetaDataLoader implements DialectTableMetaDataLoad
         return result;
     }
     
+    private void appendNumberDataType(final Map<String, Integer> dataTypes) {
+        dataTypes.put("NUMBER", Types.NUMERIC);
+    }
+    
     private ColumnMetaData loadColumnMetaData(final Map<String, Integer> dataTypeMap, final ResultSet resultSet, final Collection<String> primaryKeys, final DatabaseMetaData metaData)
             throws SQLException {
         String columnName = resultSet.getString("COLUMN_NAME");
-        String dataType = resultSet.getString("DATA_TYPE");
+        String dataType = getOriginalDataType(resultSet.getString("DATA_TYPE"));
         boolean primaryKey = primaryKeys.contains(columnName);
         boolean generated = versionContainsIdentityColumn(metaData) && "YES".equals(resultSet.getString("IDENTITY_COLUMN"));
         // TODO need to support caseSensitive when version < 12.2.
         boolean caseSensitive = versionContainsCollation(metaData) && resultSet.getString("COLLATION").endsWith("_CS");
         return new ColumnMetaData(columnName, dataTypeMap.get(dataType), primaryKey, generated, caseSensitive);
+    }
+    
+    private String getOriginalDataType(final String dataType) {
+        int index = dataType.indexOf("(");
+        if (index > 0) {
+            return dataType.substring(0, index);
+        }
+        return dataType;
     }
     
     private String getTableMetaDataSQL(final Collection<String> tables, final DatabaseMetaData metaData) throws SQLException {

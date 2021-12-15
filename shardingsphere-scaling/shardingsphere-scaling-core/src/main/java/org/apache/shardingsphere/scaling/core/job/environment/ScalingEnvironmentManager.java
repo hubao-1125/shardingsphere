@@ -17,8 +17,8 @@
 
 package org.apache.shardingsphere.scaling.core.job.environment;
 
-import org.apache.shardingsphere.scaling.core.common.datasource.DataSourceFactory;
-import org.apache.shardingsphere.scaling.core.common.datasource.DataSourceWrapper;
+import org.apache.shardingsphere.data.pipeline.core.datasource.DataSourceFactory;
+import org.apache.shardingsphere.data.pipeline.core.datasource.DataSourceWrapper;
 import org.apache.shardingsphere.scaling.core.common.sqlbuilder.ScalingSQLBuilderFactory;
 import org.apache.shardingsphere.scaling.core.job.JobContext;
 
@@ -46,7 +46,7 @@ public final class ScalingEnvironmentManager {
         try (DataSourceWrapper dataSource = dataSourceFactory.newInstance(jobContext.getJobConfig().getRuleConfig().getTarget().unwrap());
              Connection connection = dataSource.getConnection()) {
             for (String each : tables) {
-                String sql = ScalingSQLBuilderFactory.newInstance(jobContext.getJobConfig().getHandleConfig().getDatabaseType()).buildTruncateSQL(each);
+                String sql = ScalingSQLBuilderFactory.newInstance(jobContext.getJobConfig().getHandleConfig().getTargetDatabaseType()).buildTruncateSQL(each);
                 try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
                     preparedStatement.execute();
                 }

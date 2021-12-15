@@ -19,23 +19,27 @@ package org.apache.shardingsphere.proxy.initializer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.shardingsphere.db.protocol.CommonConstants;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerInfo;
 import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLServerInfo;
-import org.apache.shardingsphere.infra.config.datasource.DataSourceConfiguration;
+import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
+import org.apache.shardingsphere.infra.config.datasource.DataSourceConverter;
 import org.apache.shardingsphere.infra.config.datasource.DataSourceParameter;
-import org.apache.shardingsphere.mode.manager.ContextManager;
-import org.apache.shardingsphere.mode.manager.ContextManagerBuilder;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.infra.spi.typed.TypedSPIRegistry;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.infra.yaml.config.pojo.algorithm.YamlShardingSphereAlgorithmConfiguration;
 import org.apache.shardingsphere.infra.yaml.config.swapper.mode.ModeConfigurationYamlSwapper;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.manager.ContextManagerBuilderFactory;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
+import org.apache.shardingsphere.proxy.backend.version.ProxyVersion;
 import org.apache.shardingsphere.proxy.config.ProxyConfiguration;
 import org.apache.shardingsphere.proxy.config.YamlProxyConfiguration;
 import org.apache.shardingsphere.proxy.config.util.DataSourceParameterConverter;
 import org.apache.shardingsphere.proxy.config.yaml.swapper.YamlProxyConfigurationSwapper;
 import org.apache.shardingsphere.proxy.database.DatabaseServerInfo;
-import org.apache.shardingsphere.scaling.core.api.ScalingWorker;
+import org.apache.shardingsphere.migration.common.api.ScalingWorker;
 import org.apache.shardingsphere.scaling.core.config.ScalingContext;
 import org.apache.shardingsphere.scaling.core.config.ServerConfiguration;
 
@@ -45,7 +49,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Properties;
 
 /**
  * Bootstrap initializer.
@@ -54,45 +57,41 @@ import java.util.Properties;
 @Slf4j
 public final class BootstrapInitializer {
     
-    static {
-        ShardingSphereServiceLoader.register(ContextManagerBuilder.class);
-    }
-    
     /**
      * Initialize.
      *
      * @param yamlConfig YAML proxy configuration
+     * @param port proxy port
      * @throws SQLException SQL exception
      */
-    public void init(final YamlProxyConfiguration yamlConfig) throws SQLException {
-        ProxyConfiguration proxyConfig = new YamlProxyConfigurationSwapper().swap(yamlConfig);
+    public void init(final YamlProxyConfiguration yamlConfig, final int port) throws SQLException {
         ModeConfiguration modeConfig = null == yamlConfig.getServerConfiguration().getMode()
-                ? new ModeConfiguration("Memory", null, true) : new ModeConfigurationYamlSwapper().swapToObject(yamlConfig.getServerConfiguration().getMode());
-        ContextManager contextManager = TypedSPIRegistry.getRegisteredService(ContextManagerBuilder.class, modeConfig.getType(), new Properties()).build(
-                modeConfig, getDataSourcesMap(proxyConfig.getSchemaDataSources()), proxyConfig.getSchemaRules(), proxyConfig.getGlobalRules(), proxyConfig.getProps(), modeConfig.isOverwrite());
-        ProxyContext.getInstance().init(contextManager);
+                ? null : new ModeConfigurationYamlSwapper().swapToObject(yamlConfig.getServerConfiguration().getMode());
+        initContext(yamlConfig, modeConfig, port);
         setDatabaseServerInfo();
         initScaling(yamlConfig, modeConfig);
+    }
+    
+    private void initContext(final YamlProxyConfiguration yamlConfig, final ModeConfiguration modeConfig, final int port) throws SQLException {
+        ProxyConfiguration proxyConfig = new YamlProxyConfigurationSwapper().swap(yamlConfig);
+        boolean isOverwrite = null == modeConfig || modeConfig.isOverwrite();
+        Map<String, Map<String, DataSource>> dataSourcesMap = getDataSourcesMap(proxyConfig.getSchemaDataSources());
+        ContextManager contextManager = ContextManagerBuilderFactory.newInstance(modeConfig).build(modeConfig, dataSourcesMap,
+                proxyConfig.getSchemaRules(), proxyConfig.getGlobalRules(), proxyConfig.getProps(), isOverwrite, port);
+        ProxyContext.getInstance().init(contextManager);
     }
     
     // TODO add DataSourceParameter param to ContextManagerBuilder to avoid re-build data source
     private Map<String, Map<String, DataSource>> getDataSourcesMap(final Map<String, Map<String, DataSourceParameter>> dataSourceParametersMap) {
         Map<String, Map<String, DataSource>> result = new LinkedHashMap<>(dataSourceParametersMap.size(), 1);
         for (Entry<String, Map<String, DataSourceParameter>> entry : dataSourceParametersMap.entrySet()) {
-            result.put(entry.getKey(), getDataSourceMap(DataSourceParameterConverter.getDataSourceConfigurationMap(entry.getValue())));
-        }
-        return result;
-    }
-    
-    private Map<String, DataSource> getDataSourceMap(final Map<String, DataSourceConfiguration> dataSourceConfigMap) {
-        Map<String, DataSource> result = new LinkedHashMap<>(dataSourceConfigMap.size(), 1);
-        for (Entry<String, DataSourceConfiguration> entry : dataSourceConfigMap.entrySet()) {
-            result.put(entry.getKey(), entry.getValue().createDataSource());
+            result.put(entry.getKey(), DataSourceConverter.getDataSourceMap(DataSourceParameterConverter.getDataSourceConfigurationMap(entry.getValue())));
         }
         return result;
     }
     
     private void setDatabaseServerInfo() {
+        CommonConstants.PROXY_VERSION.set(ProxyVersion.VERSION);
         findBackendDataSource().ifPresent(dataSourceSample -> {
             DatabaseServerInfo databaseServerInfo = new DatabaseServerInfo(dataSourceSample);
             log.info(databaseServerInfo.toString());
@@ -109,10 +108,9 @@ public final class BootstrapInitializer {
     }
     
     private Optional<DataSource> findBackendDataSource() {
-        for (String each : ProxyContext.getInstance().getAllSchemaNames()) {
-            return ProxyContext.getInstance().getMetaData(each).getResource().getDataSources().values().stream().findFirst();
-        }
-        return Optional.empty();
+        MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
+        Optional<ShardingSphereMetaData> metaData = metaDataContexts.getMetaDataMap().values().stream().filter(ShardingSphereMetaData::isComplete).findFirst();
+        return metaData.flatMap(optional -> optional.getResource().getDataSources().values().stream().findFirst());
     }
     
     private void initScaling(final YamlProxyConfiguration yamlConfig, final ModeConfiguration modeConfig) {
@@ -121,7 +119,7 @@ public final class BootstrapInitializer {
             return;
         }
         // TODO decouple "Cluster" to pluggable
-        if ("Cluster".equals(modeConfig.getType())) {
+        if (null != modeConfig && "Cluster".equals(modeConfig.getType())) {
             scalingConfig.get().setModeConfiguration(modeConfig);
             ScalingContext.getInstance().init(scalingConfig.get());
             ScalingWorker.init(); 
@@ -137,6 +135,14 @@ public final class BootstrapInitializer {
         ServerConfiguration result = new ServerConfiguration();
         result.setBlockQueueSize(yamlConfig.getServerConfiguration().getScaling().getBlockQueueSize());
         result.setWorkerThread(yamlConfig.getServerConfiguration().getScaling().getWorkerThread());
+        YamlShardingSphereAlgorithmConfiguration autoSwitchConfig = yamlConfig.getServerConfiguration().getScaling().getClusterAutoSwitchAlgorithm();
+        if (null != autoSwitchConfig) {
+            result.setClusterAutoSwitchAlgorithm(new ShardingSphereAlgorithmConfiguration(autoSwitchConfig.getType(), autoSwitchConfig.getProps()));
+        }
+        YamlShardingSphereAlgorithmConfiguration dataConsistencyCheckConfig = yamlConfig.getServerConfiguration().getScaling().getDataConsistencyCheckAlgorithm();
+        if (null != dataConsistencyCheckConfig) {
+            result.setDataConsistencyCheckAlgorithm(new ShardingSphereAlgorithmConfiguration(dataConsistencyCheckConfig.getType(), dataConsistencyCheckConfig.getProps()));
+        }
         return Optional.of(result);
     }
 }

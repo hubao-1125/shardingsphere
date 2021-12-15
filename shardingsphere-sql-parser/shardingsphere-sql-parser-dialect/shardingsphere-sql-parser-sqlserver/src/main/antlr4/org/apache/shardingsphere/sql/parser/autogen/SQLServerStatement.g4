@@ -17,7 +17,7 @@
 
 grammar SQLServerStatement;
 
-import Symbol, Comments, DMLStatement, DDLStatement, TCLStatement, DCLStatement, StoreProcedure;
+import Symbol, Comments, DMLStatement, DDLStatement, TCLStatement, DCLStatement, StoreProcedure, DALStatement;
 
 execute
     : (select
@@ -29,15 +29,37 @@ execute
     | dropIndex
     | createTable
     | createDatabase
+    | createProcedure
+    | createView
+    | createTrigger
+    | createSequence
+    | createService
+    | createSchema
     | alterTable
+    | alterTrigger
+    | alterSequence
+    | alterDatabase
+    | alterService
+    | alterSchema
     | dropTable
+    | dropDatabase
+    | dropFunction
+    | dropProcedure
+    | dropView
+    | dropTrigger
+    | dropSequence
+    | dropService
+    | dropSchema
     | truncateTable
     | createFunction
     | setTransaction
     | beginTransaction
+    | beginDistributedTransaction
     | setImplicitTransactions
     | commit
+    | commitWork
     | rollback
+    | rollbackWork
     | savepoint
     | grant
     | revoke
@@ -52,5 +74,6 @@ execute
     | dropLogin
     | alterLogin
     | call
+    | explain
     ) SEMI_?
     ;

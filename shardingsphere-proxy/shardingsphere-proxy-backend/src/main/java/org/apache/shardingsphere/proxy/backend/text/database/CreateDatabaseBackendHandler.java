@@ -25,6 +25,8 @@ import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResp
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandler;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateDatabaseStatement;
 
+import java.sql.SQLException;
+
 /**
  * Create database backend handler.
  */
@@ -34,11 +36,9 @@ public final class CreateDatabaseBackendHandler implements TextProtocolBackendHa
     private final CreateDatabaseStatement sqlStatement;
     
     @Override
-    public ResponseHeader execute() {
+    public ResponseHeader execute() throws SQLException {
         check(sqlStatement);
-        // TODO update meta data context in memory
-        ProxyContext.getInstance().getContextManager().getMetaDataContexts().getPersistService().ifPresent(
-            optional -> optional.getSchemaMetaDataService().persist(sqlStatement.getDatabaseName(), null));
+        ProxyContext.getInstance().getContextManager().addSchema(sqlStatement.getDatabaseName());
         return new UpdateResponseHeader(sqlStatement);
     }
     

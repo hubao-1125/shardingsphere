@@ -28,28 +28,25 @@ public final class ShadowRuleBeanDefinitionTag {
     
     public static final String ROOT_TAG = "rule";
     
-    // fixme remove three fields when the api refactoring is complete
-    public static final String COLUMN_CONFIG_TAG = "column";
-    
-    public static final String SHADOW_DATASOURCE_NAMES_TAG = "shadowDataSourceNames";
-    
-    public static final String SOURCE_DATASOURCE_NAMES_TAG = "sourceDataSourceNames";
-    
     public static final String SHADOW_ENABLE_TAG = "enable";
     
     public static final String DATA_SOURCE_TAG = "data-source";
     
     public static final String DATA_SOURCE_ID_ATTRIBUTE = "id";
     
+    public static final String SHADOW_NAME_ATTRIBUTE = "name";
+    
     public static final String SOURCE_DATA_SOURCE_NAME_ATTRIBUTE = "source-data-source-name";
     
     public static final String SHADOW_DATA_SOURCE_NAME_ATTRIBUTE = "shadow-data-source-name";
     
-    public static final String SHADOW_TABLE_TAG = "table";
+    public static final String SHADOW_TABLE_TAG = "shadow-table";
     
-    public static final String SHADOW_TABLE_NAME_ATTRIBUTE = "name";
+    public static final String SHADOW_DEFAULT_SHADOW_ALGORITHM_NAME = "default-shadow-algorithm-name";
     
-    public static final String SHADOW_TABLE_ALGORITHM_TAG = "table-algorithm";
+    public static final String SHADOW_TABLE_DATA_SOURCE_REFS_ATTRIBUTE = "data-sources";
+    
+    public static final String SHADOW_TABLE_ALGORITHM_TAG = "algorithm";
     
     public static final String SHADOW_TABLE_ALGORITHM_REF_ATTRIBUTE = "shadow-algorithm-ref";
 }

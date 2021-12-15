@@ -87,6 +87,10 @@ SOURCE
     : S O U R C E
     ;
 
+RESOURCES
+    : R E S O U R C E S
+    ;
+
 STATUS
     : S T A T U S
     ;
@@ -98,3 +102,15 @@ HINT
 CLEAR
     : C L E A R
     ;
+
+ENABLE
+    : E N A B L E
+    ;
+    
+DISABLE
+   : D I S A B L E
+   ;
+   
+READ
+   : R E A D
+   ;

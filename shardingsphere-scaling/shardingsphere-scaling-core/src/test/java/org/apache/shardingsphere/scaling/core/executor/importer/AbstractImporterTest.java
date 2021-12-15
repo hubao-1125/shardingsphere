@@ -17,17 +17,18 @@
 
 package org.apache.shardingsphere.scaling.core.executor.importer;
 
-import org.apache.shardingsphere.scaling.core.common.channel.Channel;
-import org.apache.shardingsphere.scaling.core.common.datasource.DataSourceManager;
-import org.apache.shardingsphere.scaling.core.common.record.Column;
-import org.apache.shardingsphere.scaling.core.common.record.DataRecord;
-import org.apache.shardingsphere.scaling.core.common.record.FinishedRecord;
-import org.apache.shardingsphere.scaling.core.common.record.Record;
+import org.apache.shardingsphere.data.pipeline.core.datasource.DataSourceManager;
+import org.apache.shardingsphere.data.pipeline.core.datasource.DataSourceWrapper;
+import org.apache.shardingsphere.data.pipeline.core.ingest.channel.Channel;
+import org.apache.shardingsphere.data.pipeline.core.ingest.position.PlaceholderPosition;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.Column;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.DataRecord;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.FinishedRecord;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.Record;
+import org.apache.shardingsphere.infra.config.datasource.jdbc.config.JDBCDataSourceConfiguration;
 import org.apache.shardingsphere.scaling.core.common.record.RecordUtil;
 import org.apache.shardingsphere.scaling.core.common.sqlbuilder.ScalingSQLBuilder;
 import org.apache.shardingsphere.scaling.core.config.ImporterConfiguration;
-import org.apache.shardingsphere.scaling.core.config.datasource.ScalingDataSourceConfiguration;
-import org.apache.shardingsphere.scaling.core.job.position.PlaceholderPosition;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +36,6 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
@@ -69,13 +70,13 @@ public final class AbstractImporterTest {
     private ScalingSQLBuilder scalingSqlBuilder;
     
     @Mock
-    private ScalingDataSourceConfiguration dataSourceConfig;
+    private JDBCDataSourceConfiguration dataSourceConfig;
     
     @Mock
     private Channel channel;
     
     @Mock
-    private DataSource dataSource;
+    private DataSourceWrapper dataSource;
     
     @Mock
     private Connection connection;
@@ -130,6 +131,7 @@ public final class AbstractImporterTest {
         when(scalingSqlBuilder.buildUpdateSQL(updateRecord, mockConditionColumns(updateRecord))).thenReturn(UPDATE_SQL);
         when(connection.prepareStatement(UPDATE_SQL)).thenReturn(preparedStatement);
         when(channel.fetchRecords(anyInt(), anyInt())).thenReturn(mockRecords(updateRecord));
+        when(scalingSqlBuilder.extractUpdatedColumns(any(), any())).thenReturn(RecordUtil.extractUpdatedColumns(updateRecord));
         jdbcImporter.run();
         verify(preparedStatement).setObject(1, 10);
         verify(preparedStatement).setObject(2, "UPDATE");
@@ -144,6 +146,7 @@ public final class AbstractImporterTest {
         when(scalingSqlBuilder.buildUpdateSQL(updateRecord, mockConditionColumns(updateRecord))).thenReturn(UPDATE_SQL);
         when(connection.prepareStatement(UPDATE_SQL)).thenReturn(preparedStatement);
         when(channel.fetchRecords(anyInt(), anyInt())).thenReturn(mockRecords(updateRecord));
+        when(scalingSqlBuilder.extractUpdatedColumns(any(), any())).thenReturn(RecordUtil.extractUpdatedColumns(updateRecord));
         jdbcImporter.run();
         InOrder inOrder = inOrder(preparedStatement);
         inOrder.verify(preparedStatement).setObject(1, 2);

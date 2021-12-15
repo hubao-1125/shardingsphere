@@ -19,10 +19,10 @@ package org.apache.shardingsphere.scaling.core.job.progress;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.shardingsphere.data.pipeline.core.ingest.position.FinishedPosition;
+import org.apache.shardingsphere.data.pipeline.core.ingest.position.IngestPosition;
 import org.apache.shardingsphere.infra.yaml.engine.YamlEngine;
 import org.apache.shardingsphere.scaling.core.job.JobStatus;
-import org.apache.shardingsphere.scaling.core.job.position.FinishedPosition;
-import org.apache.shardingsphere.scaling.core.job.position.ScalingPosition;
 import org.apache.shardingsphere.scaling.core.job.progress.yaml.JobProgressYamlSwapper;
 import org.apache.shardingsphere.scaling.core.job.progress.yaml.YamlJobProgress;
 import org.apache.shardingsphere.scaling.core.job.task.incremental.IncrementalTaskProgress;
@@ -31,6 +31,7 @@ import org.apache.shardingsphere.scaling.core.job.task.inventory.InventoryTaskPr
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -45,12 +46,11 @@ public final class JobProgress {
     
     private JobStatus status = JobStatus.RUNNING;
     
-    private String databaseType;
+    private String sourceDatabaseType;
     
     private Map<String, InventoryTaskProgress> inventoryTaskProgressMap;
     
     private Map<String, IncrementalTaskProgress> incrementalTaskProgressMap;
-    
     
     /**
      * Init by string data.
@@ -68,8 +68,9 @@ public final class JobProgress {
      * @param dataSourceName data source name
      * @return incremental position
      */
-    public ScalingPosition<?> getIncrementalPosition(final String dataSourceName) {
-        return incrementalTaskProgressMap.get(dataSourceName).getPosition();
+    public Optional<IngestPosition<?>> getIncrementalPosition(final String dataSourceName) {
+        IncrementalTaskProgress progress = incrementalTaskProgressMap.get(dataSourceName);
+        return Optional.ofNullable(null != progress ? progress.getPosition() : null);
     }
     
     /**
@@ -78,7 +79,7 @@ public final class JobProgress {
      * @param tableName table name
      * @return inventory position
      */
-    public Map<String, ScalingPosition<?>> getInventoryPosition(final String tableName) {
+    public Map<String, IngestPosition<?>> getInventoryPosition(final String tableName) {
         Pattern pattern = Pattern.compile(String.format("%s(#\\d+)?", tableName));
         return inventoryTaskProgressMap.entrySet().stream()
                 .filter(entry -> pattern.matcher(entry.getKey()).find())
@@ -112,14 +113,14 @@ public final class JobProgress {
     }
     
     /**
-     * Get incremental delay milliseconds.
+     * Get incremental latest active time milliseconds.
      *
-     * @return average delay
+     * @return latest active time, <code>0</code> is there is no activity
      */
-    public long getIncrementalDelayMilliseconds() {
+    public long getIncrementalLatestActiveTimeMillis() {
         List<Long> delays = incrementalTaskProgressMap.values().stream()
-                .map(each -> each.getIncrementalTaskDelay().getDelayMilliseconds())
+                .map(each -> each.getIncrementalTaskDelay().getLatestActiveTimeMillis())
                 .collect(Collectors.toList());
-        return delays.isEmpty() || delays.contains(-1L) ? -1L : delays.stream().reduce(Long::sum).orElse(0L) / delays.size();
+        return delays.stream().reduce(Long::max).orElse(0L);
     }
 }

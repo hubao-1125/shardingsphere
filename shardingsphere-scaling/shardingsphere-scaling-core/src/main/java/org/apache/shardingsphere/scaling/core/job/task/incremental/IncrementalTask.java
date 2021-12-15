@@ -18,22 +18,24 @@
 package org.apache.shardingsphere.scaling.core.job.task.incremental;
 
 import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.scaling.core.common.channel.distribution.DistributionChannel;
-import org.apache.shardingsphere.scaling.core.common.datasource.DataSourceManager;
+import org.apache.shardingsphere.data.pipeline.core.datasource.DataSourceManager;
+import org.apache.shardingsphere.data.pipeline.core.ingest.channel.distribution.DistributionChannel;
+import org.apache.shardingsphere.data.pipeline.core.ingest.config.DumperConfiguration;
+import org.apache.shardingsphere.data.pipeline.core.ingest.dumper.Dumper;
+import org.apache.shardingsphere.data.pipeline.core.ingest.position.PlaceholderPosition;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.Record;
 import org.apache.shardingsphere.scaling.core.common.exception.ScalingTaskExecuteException;
-import org.apache.shardingsphere.scaling.core.common.record.Record;
-import org.apache.shardingsphere.scaling.core.config.DumperConfiguration;
 import org.apache.shardingsphere.scaling.core.config.ImporterConfiguration;
 import org.apache.shardingsphere.scaling.core.config.ScalingContext;
-import org.apache.shardingsphere.scaling.core.executor.AbstractScalingExecutor;
-import org.apache.shardingsphere.scaling.core.executor.dumper.Dumper;
 import org.apache.shardingsphere.scaling.core.executor.dumper.DumperFactory;
 import org.apache.shardingsphere.scaling.core.executor.engine.ExecuteCallback;
 import org.apache.shardingsphere.scaling.core.executor.importer.Importer;
 import org.apache.shardingsphere.scaling.core.executor.importer.ImporterFactory;
-import org.apache.shardingsphere.scaling.core.job.position.PlaceholderPosition;
+import org.apache.shardingsphere.scaling.core.executor.importer.ImporterListener;
 import org.apache.shardingsphere.scaling.core.job.task.ScalingTask;
+import org.apache.shardingsphere.schedule.core.executor.AbstractLifecycleExecutor;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,7 +47,8 @@ import java.util.concurrent.Future;
  * Incremental task.
  */
 @Slf4j
-public final class IncrementalTask extends AbstractScalingExecutor implements ScalingTask {
+@ToString(exclude = {"dataSourceManager", "dumper", "progress"})
+public final class IncrementalTask extends AbstractLifecycleExecutor implements ScalingTask {
     
     @Getter
     private final String taskId;
@@ -61,7 +64,7 @@ public final class IncrementalTask extends AbstractScalingExecutor implements Sc
     private Dumper dumper;
     
     @Getter
-    private IncrementalTaskProgress progress;
+    private final IncrementalTaskProgress progress;
     
     public IncrementalTask(final int concurrency, final DumperConfiguration dumperConfig, final ImporterConfiguration importerConfig) {
         this.concurrency = concurrency;
@@ -69,11 +72,13 @@ public final class IncrementalTask extends AbstractScalingExecutor implements Sc
         this.importerConfig = importerConfig;
         dataSourceManager = new DataSourceManager();
         taskId = dumperConfig.getDataSourceName();
-        progress = new IncrementalTaskProgress(dumperConfig.getPosition());
+        progress = new IncrementalTaskProgress();
+        progress.setPosition(dumperConfig.getPosition());
     }
     
     @Override
     public void start() {
+        progress.getIncrementalTaskDelay().setLatestActiveTimeMillis(System.currentTimeMillis());
         dumper = DumperFactory.newInstanceLogDumper(dumperConfig, progress.getPosition());
         Collection<Importer> importers = instanceImporters();
         instanceChannel(importers);
@@ -95,13 +100,15 @@ public final class IncrementalTask extends AbstractScalingExecutor implements Sc
         DistributionChannel channel = new DistributionChannel(importers.size(), records -> {
             Record lastHandledRecord = records.get(records.size() - 1);
             if (!(lastHandledRecord.getPosition() instanceof PlaceholderPosition)) {
-                progress = new IncrementalTaskProgress(lastHandledRecord.getPosition(),
-                        new IncrementalTaskDelay(lastHandledRecord.getCommitTime(), System.currentTimeMillis() - lastHandledRecord.getCommitTime()));
+                progress.setPosition(lastHandledRecord.getPosition());
+                progress.getIncrementalTaskDelay().setLastEventTimestamps(lastHandledRecord.getCommitTime());
             }
         });
         dumper.setChannel(channel);
+        ImporterListener importerListener = records -> progress.getIncrementalTaskDelay().setLatestActiveTimeMillis(System.currentTimeMillis());
         for (Importer each : importers) {
             each.setChannel(channel);
+            each.setImporterListener(importerListener);
         }
     }
     

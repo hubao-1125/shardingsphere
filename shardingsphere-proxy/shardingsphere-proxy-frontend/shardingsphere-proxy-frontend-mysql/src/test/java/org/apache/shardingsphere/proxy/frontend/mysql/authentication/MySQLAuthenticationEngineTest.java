@@ -19,22 +19,25 @@ package org.apache.shardingsphere.proxy.frontend.mysql.authentication;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.Attribute;
 import lombok.SneakyThrows;
+import org.apache.shardingsphere.db.protocol.CommonConstants;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLCapabilityFlag;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLConnectionPhase;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLConstants;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerErrorCode;
 import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLErrPacket;
 import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLOKPacket;
 import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLHandshakePacket;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.mode.manager.ContextManager;
-import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
-import org.apache.shardingsphere.infra.optimize.context.OptimizeContextFactory;
-import org.apache.shardingsphere.mode.persist.PersistService;
+import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
+import org.apache.shardingsphere.mode.metadata.persist.MetaDataPersistService;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.frontend.authentication.AuthenticationResultBuilder;
 import org.junit.Before;
@@ -92,7 +95,10 @@ public final class MySQLAuthenticationEngineTest {
         Channel channel = mock(Channel.class);
         when(payload.readStringNulByBytes()).thenReturn("root".getBytes());
         when(channel.remoteAddress()).thenReturn(new InetSocketAddress("localhost", 3307));
+        when(channel.attr(CommonConstants.CHARSET_ATTRIBUTE_KEY)).thenReturn(mock(Attribute.class));
+        when(channel.attr(MySQLConstants.MYSQL_CHARACTER_SET_ATTRIBUTE_KEY)).thenReturn(mock(Attribute.class));
         when(channelHandlerContext.channel()).thenReturn(channel);
+        when(payload.readInt1()).thenReturn(1);
         when(payload.readInt4()).thenReturn(MySQLCapabilityFlag.CLIENT_PLUGIN_AUTH.getValue());
         authenticationEngine.authenticate(channelHandlerContext, payload);
         assertThat(getConnectionPhase(), is(MySQLConnectionPhase.AUTHENTICATION_METHOD_MISMATCH));
@@ -152,15 +158,16 @@ public final class MySQLAuthenticationEngineTest {
         Field contextManagerField = ProxyContext.getInstance().getClass().getDeclaredField("contextManager");
         contextManagerField.setAccessible(true);
         ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
-        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(PersistService.class),
+        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(MetaDataPersistService.class),
                 Collections.singletonMap("sharding_db", mock(ShardingSphereMetaData.class)), mock(ShardingSphereRuleMetaData.class),
-                mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mock(OptimizeContextFactory.class));
+                mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mock(OptimizerContext.class));
         when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
         contextManagerField.set(ProxyContext.getInstance(), contextManager);
     }
     
     private MySQLPacketPayload getPayload(final String username, final String database, final byte[] authResponse) {
         MySQLPacketPayload result = mock(MySQLPacketPayload.class);
+        when(result.readInt1()).thenReturn(1);
         when(result.readInt4()).thenReturn(MySQLCapabilityFlag.CLIENT_CONNECT_WITH_DB.getValue());
         when(result.readStringNul()).thenReturn(username).thenReturn(database);
         when(result.readStringNulByBytes()).thenReturn(authResponse);
@@ -176,6 +183,8 @@ public final class MySQLAuthenticationEngineTest {
     private Channel getChannel() {
         Channel result = mock(Channel.class);
         doReturn(getRemoteAddress()).when(result).remoteAddress();
+        when(result.attr(CommonConstants.CHARSET_ATTRIBUTE_KEY)).thenReturn(mock(Attribute.class));
+        when(result.attr(MySQLConstants.MYSQL_CHARACTER_SET_ATTRIBUTE_KEY)).thenReturn(mock(Attribute.class));
         return result;
     }
     

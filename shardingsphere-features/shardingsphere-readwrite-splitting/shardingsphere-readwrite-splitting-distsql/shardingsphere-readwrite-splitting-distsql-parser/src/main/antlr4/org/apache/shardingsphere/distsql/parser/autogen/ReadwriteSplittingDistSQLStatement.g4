@@ -27,5 +27,8 @@ execute
     | setReadwriteSplittingHintSource
     | showReadwriteSplittingHintStatus
     | clearReadwriteSplittingHint
+    | enableReadDataSource
+    | disableReadDataSource
+    | showReadwriteSplittingReadResources
     ) SEMI?
     ;

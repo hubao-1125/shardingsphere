@@ -37,6 +37,7 @@ execute
     | end
     | commit
     | rollback
+    | abort
     | savepoint
     | releaseSavepoint
     | rollbackToSavepoint
@@ -81,5 +82,7 @@ execute
     | createTablespace
     | alterTablespace
     | dropTablespace
+    | setConstraints
+    | copy
     ) SEMI_?
     ;

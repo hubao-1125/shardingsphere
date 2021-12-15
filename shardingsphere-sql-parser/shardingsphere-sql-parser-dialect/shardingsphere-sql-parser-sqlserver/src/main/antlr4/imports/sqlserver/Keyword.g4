@@ -127,6 +127,10 @@ PROCEDURE
     : P R O C E D U R E
     ;
 
+PROC
+    : P R O C
+    ;
+
 VIEW
     : V I E W
     ;
@@ -674,4 +678,8 @@ RETURN
 
 READONLY
     : R E A D O N L Y
+    ;
+
+AT
+    : A T
     ;

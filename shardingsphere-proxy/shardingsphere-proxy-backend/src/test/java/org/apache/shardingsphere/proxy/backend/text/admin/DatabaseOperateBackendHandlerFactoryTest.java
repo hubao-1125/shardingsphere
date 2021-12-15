@@ -18,19 +18,19 @@
 package org.apache.shardingsphere.proxy.backend.text.admin;
 
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.mode.manager.ContextManager;
-import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
+import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
-import org.apache.shardingsphere.infra.optimize.context.OptimizeContextFactory;
-import org.apache.shardingsphere.mode.persist.PersistService;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
+import org.apache.shardingsphere.mode.metadata.persist.MetaDataPersistService;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.DBCreateExistsException;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
 import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
+import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.database.DatabaseOperateBackendHandlerFactory;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateDatabaseStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropDatabaseStatement;
@@ -41,6 +41,10 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.ddl
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.sql.SQLException;
 import java.util.Collections;
@@ -48,7 +52,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -56,15 +59,22 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public final class DatabaseOperateBackendHandlerFactoryTest {
+    
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private ContextManager contextManager;
+    
+    @Mock
+    private ConnectionSession connectionSession;
     
     @Before
     public void setUp() throws IllegalAccessException, NoSuchFieldException {
-        ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
-        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(PersistService.class),
-                getMetaDataMap(), mock(ShardingSphereRuleMetaData.class), mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mock(OptimizeContextFactory.class));
+        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(MetaDataPersistService.class), getMetaDataMap(), 
+                mock(ShardingSphereRuleMetaData.class), mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mock(OptimizerContext.class));
         when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
         ProxyContext.getInstance().init(contextManager);
+        when(connectionSession.getSchemaName()).thenReturn("schema");
     }
     
     @Test
@@ -78,16 +88,9 @@ public final class DatabaseOperateBackendHandlerFactoryTest {
     }
     
     private void assertExecuteCreateDatabaseContext(final CreateDatabaseStatement sqlStatement) throws SQLException {
-        BackendConnection connection = mock(BackendConnection.class);
-        when(connection.getSchemaName()).thenReturn("schema");
         sqlStatement.setDatabaseName("new_db");
-        try {
-            DatabaseOperateBackendHandlerFactory.newInstance(sqlStatement, connection);
-        } catch (final SQLException ex) {
-            assertThat(ex.getMessage(), is(String.format("No Registry center to execute `%s` SQL", sqlStatement.getClass().getSimpleName())));
-        }
         setGovernanceMetaDataContexts(true);
-        ResponseHeader response = DatabaseOperateBackendHandlerFactory.newInstance(sqlStatement, connection).execute();
+        ResponseHeader response = DatabaseOperateBackendHandlerFactory.newInstance(sqlStatement, connectionSession).execute();
         assertThat(response, instanceOf(UpdateResponseHeader.class));
     }
     
@@ -102,16 +105,9 @@ public final class DatabaseOperateBackendHandlerFactoryTest {
     }
     
     private void assertExecuteDropDatabaseContext(final DropDatabaseStatement sqlStatement) throws SQLException {
-        BackendConnection connection = mock(BackendConnection.class);
-        when(connection.getSchemaName()).thenReturn("schema");
         sqlStatement.setDatabaseName("schema");
-        try {
-            DatabaseOperateBackendHandlerFactory.newInstance(sqlStatement, connection);
-        } catch (final SQLException ex) {
-            assertThat(ex.getMessage(), is(String.format("No Registry center to execute `%s` SQL", sqlStatement.getClass().getSimpleName())));
-        }
         setGovernanceMetaDataContexts(true);
-        ResponseHeader response = DatabaseOperateBackendHandlerFactory.newInstance(sqlStatement, connection).execute();
+        ResponseHeader response = DatabaseOperateBackendHandlerFactory.newInstance(sqlStatement, connectionSession).execute();
         assertThat(response, instanceOf(UpdateResponseHeader.class));
     }
     
@@ -126,17 +122,10 @@ public final class DatabaseOperateBackendHandlerFactoryTest {
     }
     
     public void assertExecuteCreateDatabaseContextWithException(final CreateDatabaseStatement sqlStatement) throws SQLException {
-        BackendConnection connection = mock(BackendConnection.class);
-        when(connection.getSchemaName()).thenReturn("schema");
         sqlStatement.setDatabaseName("schema");
-        try {
-            DatabaseOperateBackendHandlerFactory.newInstance(sqlStatement, connection);
-        } catch (final SQLException ex) {
-            assertThat(ex.getMessage(), is(String.format("No Registry center to execute `%s` SQL", sqlStatement.getClass().getSimpleName())));
-        }
         setGovernanceMetaDataContexts(true);
         try {
-            DatabaseOperateBackendHandlerFactory.newInstance(sqlStatement, connection);
+            DatabaseOperateBackendHandlerFactory.newInstance(sqlStatement, connectionSession);
         } catch (final DBCreateExistsException ex) {
             assertNull(ex.getMessage());
         }
@@ -150,7 +139,7 @@ public final class DatabaseOperateBackendHandlerFactoryTest {
     
     private void setGovernanceMetaDataContexts(final boolean isGovernance) {
         ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
-        MetaDataContexts metaDataContexts = isGovernance ? mockMetaDataContexts() : new MetaDataContexts(mock(PersistService.class));
+        MetaDataContexts metaDataContexts = isGovernance ? mockMetaDataContexts() : new MetaDataContexts(mock(MetaDataPersistService.class));
         when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
         ProxyContext.getInstance().init(contextManager);
     }

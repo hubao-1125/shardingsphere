@@ -21,10 +21,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.shardingsphere.scaling.core.config.JobConfiguration;
 import org.apache.shardingsphere.scaling.core.config.TaskConfiguration;
+import org.apache.shardingsphere.scaling.core.job.preparer.ScalingJobPreparer;
 import org.apache.shardingsphere.scaling.core.job.progress.JobProgress;
 import org.apache.shardingsphere.scaling.core.job.task.incremental.IncrementalTask;
 import org.apache.shardingsphere.scaling.core.job.task.inventory.InventoryTask;
-import org.apache.shardingsphere.scaling.core.util.JobConfigurationUtil;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -50,13 +50,15 @@ public final class JobContext {
     
     private final List<IncrementalTask> incrementalTasks = new LinkedList<>();
     
-    private JobConfiguration jobConfig;
+    private final JobConfiguration jobConfig;
+    
+    private ScalingJobPreparer jobPreparer;
     
     public JobContext(final JobConfiguration jobConfig) {
         this.jobConfig = jobConfig;
-        JobConfigurationUtil.fillInProperties(jobConfig);
+        jobConfig.buildHandleConfig();
         jobId = jobConfig.getHandleConfig().getJobId();
-        shardingItem = jobConfig.getHandleConfig().getShardingItem();
-        taskConfigs = JobConfigurationUtil.toTaskConfigs(jobConfig);
+        shardingItem = jobConfig.getHandleConfig().getJobShardingItem();
+        taskConfigs = jobConfig.buildTaskConfigs();
     }
 }

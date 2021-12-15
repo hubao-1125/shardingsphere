@@ -21,11 +21,11 @@ import com.google.common.base.Preconditions;
 import org.apache.shardingsphere.encrypt.rewrite.parameter.EncryptParameterRewriter;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
 import org.apache.shardingsphere.encrypt.spi.QueryAssistedEncryptAlgorithm;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.infra.rewrite.parameter.builder.ParameterBuilder;
 import org.apache.shardingsphere.infra.rewrite.parameter.builder.impl.GroupedParameterBuilder;
 import org.apache.shardingsphere.infra.rewrite.parameter.builder.impl.StandardParameterBuilder;
-import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.dialect.handler.dml.InsertStatementHandler;
@@ -44,16 +44,18 @@ public final class EncryptInsertValueParameterRewriter extends EncryptParameterR
 
     @Override
     protected boolean isNeedRewriteForEncrypt(final SQLStatementContext sqlStatementContext) {
-        return sqlStatementContext instanceof InsertStatementContext && !InsertStatementHandler.getSetAssignmentSegment(((InsertStatementContext) sqlStatementContext).getSqlStatement()).isPresent();
+        return sqlStatementContext instanceof InsertStatementContext && !InsertStatementHandler.getSetAssignmentSegment(((InsertStatementContext) sqlStatementContext).getSqlStatement()).isPresent()
+                && (null == ((InsertStatementContext) sqlStatementContext).getInsertSelectContext());
     }
 
     @Override
     public void rewrite(final ParameterBuilder parameterBuilder, final InsertStatementContext insertStatementContext, final List<Object> parameters) {
         String tableName = insertStatementContext.getSqlStatement().getTable().getTableName().getIdentifier().getValue();
         Iterator<String> descendingColumnNames = insertStatementContext.getDescendingColumnNames();
+        String schemaName = insertStatementContext.getSchemaName();
         while (descendingColumnNames.hasNext()) {
             String columnName = descendingColumnNames.next();
-            getEncryptRule().findEncryptor(tableName, columnName).ifPresent(
+            getEncryptRule().findEncryptor(schemaName, tableName, columnName).ifPresent(
                 encryptAlgorithm -> encryptInsertValues((GroupedParameterBuilder) parameterBuilder, insertStatementContext, encryptAlgorithm, tableName, columnName));
         }
     }
@@ -87,7 +89,8 @@ public final class EncryptInsertValueParameterRewriter extends EncryptParameterR
         }
         return columnNames.indexOf(encryptLogicColumnName);
     }
-
+    
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void encryptInsertValue(final EncryptAlgorithm encryptAlgorithm, final String tableName, final int parameterIndex,
                                     final Object originalValue, final StandardParameterBuilder parameterBuilder, final String encryptLogicColumnName) {
         parameterBuilder.addReplacedParameters(parameterIndex, encryptAlgorithm.encrypt(originalValue));
@@ -95,7 +98,7 @@ public final class EncryptInsertValueParameterRewriter extends EncryptParameterR
         if (encryptAlgorithm instanceof QueryAssistedEncryptAlgorithm) {
             Optional<String> assistedColumnName = getEncryptRule().findAssistedQueryColumn(tableName, encryptLogicColumnName);
             Preconditions.checkArgument(assistedColumnName.isPresent(), "Can not find assisted query Column Name");
-            addedParameters.add(((QueryAssistedEncryptAlgorithm) encryptAlgorithm).queryAssistedEncrypt(originalValue.toString()));
+            addedParameters.add(((QueryAssistedEncryptAlgorithm) encryptAlgorithm).queryAssistedEncrypt(originalValue));
         }
         if (getEncryptRule().findPlainColumn(tableName, encryptLogicColumnName).isPresent()) {
             addedParameters.add(originalValue);

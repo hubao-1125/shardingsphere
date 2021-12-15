@@ -22,6 +22,7 @@ import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.shardingsphere.data.pipeline.core.constant.DataPipelineConstants;
 import org.apache.shardingsphere.elasticjob.lite.lifecycle.api.JobAPIFactory;
 import org.apache.shardingsphere.elasticjob.lite.lifecycle.api.JobConfigurationAPI;
 import org.apache.shardingsphere.elasticjob.lite.lifecycle.api.JobOperateAPI;
@@ -29,15 +30,14 @@ import org.apache.shardingsphere.elasticjob.lite.lifecycle.api.JobStatisticsAPI;
 import org.apache.shardingsphere.elasticjob.reg.base.CoordinatorRegistryCenter;
 import org.apache.shardingsphere.elasticjob.reg.zookeeper.ZookeeperConfiguration;
 import org.apache.shardingsphere.elasticjob.reg.zookeeper.ZookeeperRegistryCenter;
-import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.infra.spi.typed.TypedSPIRegistry;
+import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
 import org.apache.shardingsphere.scaling.core.api.impl.GovernanceRepositoryAPIImpl;
 import org.apache.shardingsphere.scaling.core.api.impl.ScalingAPIImpl;
-import org.apache.shardingsphere.scaling.core.common.constant.ScalingConstant;
 import org.apache.shardingsphere.scaling.core.config.ScalingContext;
 import org.apache.shardingsphere.scaling.core.config.ServerConfiguration;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.spi.typed.TypedSPIRegistry;
 
 import java.util.Properties;
 
@@ -167,7 +167,7 @@ public final class ScalingAPIFactory {
         private ElasticJobAPIHolder() {
             checkServerConfig();
             ClusterPersistRepositoryConfiguration repositoryConfig = (ClusterPersistRepositoryConfiguration) ScalingContext.getInstance().getServerConfig().getModeConfiguration().getRepository();
-            String namespace = repositoryConfig.getNamespace() + ScalingConstant.SCALING_ROOT;
+            String namespace = repositoryConfig.getNamespace() + DataPipelineConstants.DATA_PIPELINE_ROOT;
             jobStatisticsAPI = JobAPIFactory.createJobStatisticsAPI(repositoryConfig.getServerLists(), namespace, null);
             jobConfigurationAPI = JobAPIFactory.createJobConfigurationAPI(repositoryConfig.getServerLists(), namespace, null);
             jobOperateAPI = JobAPIFactory.createJobOperateAPI(repositoryConfig.getServerLists(), namespace, null);
@@ -209,7 +209,7 @@ public final class ScalingAPIFactory {
         private static ZookeeperConfiguration getZookeeperConfig() {
             checkServerConfig();
             ClusterPersistRepositoryConfiguration repositoryConfig = (ClusterPersistRepositoryConfiguration) ScalingContext.getInstance().getServerConfig().getModeConfiguration().getRepository();
-            ZookeeperConfiguration result = new ZookeeperConfiguration(repositoryConfig.getServerLists(), repositoryConfig.getNamespace() + ScalingConstant.SCALING_ROOT);
+            ZookeeperConfiguration result = new ZookeeperConfiguration(repositoryConfig.getServerLists(), repositoryConfig.getNamespace() + DataPipelineConstants.DATA_PIPELINE_ROOT);
             Properties props = repositoryConfig.getProps();
             result.setMaxSleepTimeMilliseconds(getProperty(props, "max.sleep.time.milliseconds", result.getMaxSleepTimeMilliseconds()));
             result.setBaseSleepTimeMilliseconds(getProperty(props, "base.sleep.time.milliseconds", result.getBaseSleepTimeMilliseconds()));

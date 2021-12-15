@@ -22,5 +22,12 @@
         AS $$
         INSERT INTO tbl VALUES (a);
         INSERT INTO tbl VALUES (b);
-        $$" db-types="PostgreSQL" />
+        $$" db-types="PostgreSQL,openGauss" />
+    <sql-case id="create_procedure_with_parameters" value="CREATE PROCEDURE HumanResources.uspGetEmployees
+            @LastName NVARCHAR(50),
+            @FirstName NVARCHAR(50)
+        AS
+            SELECT FirstName, LastName, JobTitle, Department
+            FROM HumanResources.vEmployeeDepartment
+            WHERE FirstName = @FirstName AND LastName = @LastName;" db-types="SQLServer"/>
 </sql-cases>

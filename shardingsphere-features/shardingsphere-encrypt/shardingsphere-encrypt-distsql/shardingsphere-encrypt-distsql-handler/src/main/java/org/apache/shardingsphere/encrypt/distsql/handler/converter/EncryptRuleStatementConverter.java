@@ -56,12 +56,12 @@ public final class EncryptRuleStatementConverter {
         for (EncryptColumnSegment each : ruleSegment.getColumns()) {
             columns.add(createEncryptColumnRuleConfiguration(ruleSegment.getTableName(), each));
         }
-        return new EncryptTableRuleConfiguration(ruleSegment.getTableName(), columns);
+        return new EncryptTableRuleConfiguration(ruleSegment.getTableName(), columns, ruleSegment.getQueryWithCipherColumn());
     }
     
     private static EncryptColumnRuleConfiguration createEncryptColumnRuleConfiguration(final String tableName, final EncryptColumnSegment columnSegment) {
-        // TODO add assistedQueryColumn
-        return new EncryptColumnRuleConfiguration(columnSegment.getName(), columnSegment.getCipherColumn(), null, columnSegment.getPlainColumn(), getEncryptorName(tableName, columnSegment.getName()));
+        return new EncryptColumnRuleConfiguration(columnSegment.getName(), columnSegment.getCipherColumn(), columnSegment.getAssistedQueryColumn(),
+                columnSegment.getPlainColumn(), getEncryptorName(tableName, columnSegment.getName()));
     }
     
     private static Map<String, ShardingSphereAlgorithmConfiguration> createEncryptorConfigurations(final EncryptRuleSegment ruleSegment) {
