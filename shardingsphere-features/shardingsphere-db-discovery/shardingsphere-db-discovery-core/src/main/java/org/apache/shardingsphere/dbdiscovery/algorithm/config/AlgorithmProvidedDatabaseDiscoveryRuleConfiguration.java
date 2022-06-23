@@ -23,9 +23,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.shardingsphere.dbdiscovery.api.config.rule.DatabaseDiscoveryHeartBeatConfiguration;
 import org.apache.shardingsphere.dbdiscovery.api.config.rule.DatabaseDiscoveryDataSourceRuleConfiguration;
-import org.apache.shardingsphere.dbdiscovery.spi.DatabaseDiscoveryType;
+import org.apache.shardingsphere.dbdiscovery.spi.DatabaseDiscoveryProviderAlgorithm;
 import org.apache.shardingsphere.infra.config.function.DistributedRuleConfiguration;
-import org.apache.shardingsphere.infra.config.scope.SchemaRuleConfiguration;
+import org.apache.shardingsphere.infra.config.scope.DatabaseRuleConfiguration;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -33,17 +33,17 @@ import java.util.LinkedList;
 import java.util.Map;
 
 /**
- * Algorithm provided data base discovery rule configuration.
+ * Algorithm provided database discovery rule configuration.
  */
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public final class AlgorithmProvidedDatabaseDiscoveryRuleConfiguration implements SchemaRuleConfiguration, DistributedRuleConfiguration {
+public final class AlgorithmProvidedDatabaseDiscoveryRuleConfiguration implements DatabaseRuleConfiguration, DistributedRuleConfiguration {
     
     private Collection<DatabaseDiscoveryDataSourceRuleConfiguration> dataSources = new LinkedList<>();
     
     private Map<String, DatabaseDiscoveryHeartBeatConfiguration> discoveryHeartbeats = new LinkedHashMap<>();
     
-    private Map<String, DatabaseDiscoveryType> discoveryTypes = new LinkedHashMap<>();
+    private Map<String, DatabaseDiscoveryProviderAlgorithm> discoveryTypes = new LinkedHashMap<>();
 }

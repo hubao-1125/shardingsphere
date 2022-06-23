@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.proxy.frontend.opengauss;
 
-import lombok.SneakyThrows;
+import org.apache.shardingsphere.db.protocol.opengauss.codec.OpenGaussPacketCodecEngine;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.frontend.opengauss.authentication.OpenGaussAuthenticationEngine;
 import org.apache.shardingsphere.proxy.frontend.opengauss.command.OpenGaussCommandExecuteEngine;
@@ -29,10 +29,8 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -40,24 +38,15 @@ import static org.mockito.Mockito.verify;
 @RunWith(MockitoJUnitRunner.class)
 public final class OpenGaussFrontendEngineTest {
     
-    private OpenGaussFrontendEngine openGaussFrontendEngine;
+    private final OpenGaussFrontendEngine openGaussFrontendEngine = new OpenGaussFrontendEngine();
     
     @Mock
     private PostgreSQLFrontendEngine mockPostgreSQLFrontendEngine;
     
     @Before
-    public void setup() {
-        openGaussFrontendEngine = new OpenGaussFrontendEngine();
-        prepareMock();
-    }
-    
-    @SneakyThrows
-    private void prepareMock() {
+    public void setup() throws ReflectiveOperationException {
         Field field = OpenGaussFrontendEngine.class.getDeclaredField("postgreSQLFrontendEngine");
         field.setAccessible(true);
-        Field modifiers = Field.class.getDeclaredField("modifiers");
-        modifiers.setAccessible(true);
-        modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
         field.set(openGaussFrontendEngine, mockPostgreSQLFrontendEngine);
     }
     
@@ -74,8 +63,7 @@ public final class OpenGaussFrontendEngineTest {
     
     @Test
     public void assertGetCodecEngine() {
-        openGaussFrontendEngine.getCodecEngine();
-        verify(mockPostgreSQLFrontendEngine).getCodecEngine();
+        assertThat(openGaussFrontendEngine.getCodecEngine(), instanceOf(OpenGaussPacketCodecEngine.class));
     }
     
     @Test
@@ -88,10 +76,5 @@ public final class OpenGaussFrontendEngineTest {
         ConnectionSession connection = mock(ConnectionSession.class);
         openGaussFrontendEngine.release(connection);
         verify(mockPostgreSQLFrontendEngine).release(connection);
-    }
-    
-    @Test
-    public void assertGetDatabaseType() {
-        assertThat(openGaussFrontendEngine.getDatabaseType(), is("openGauss"));
     }
 }

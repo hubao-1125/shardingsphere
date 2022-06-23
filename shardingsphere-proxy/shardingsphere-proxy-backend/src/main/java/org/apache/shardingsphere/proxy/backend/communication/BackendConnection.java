@@ -20,10 +20,14 @@ package org.apache.shardingsphere.proxy.backend.communication;
 import org.apache.shardingsphere.proxy.backend.exception.BackendConnectionException;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 
+import java.sql.SQLException;
+
 /**
  * Backend connection for Proxy.
+ *
+ * @param <T> return type of methods
  */
-public interface BackendConnection {
+public interface BackendConnection<T> {
     
     /**
      * Get connection session of backend connection.
@@ -35,21 +39,32 @@ public interface BackendConnection {
     /**
      * Prepare for task execution.
      *
-     * @throws BackendConnectionException backend connection exception
+     * @return can be Void or Future
+     * @throws SQLException SQL exception
      */
-    void prepareForTaskExecution() throws BackendConnectionException;
+    T prepareForTaskExecution() throws SQLException;
+    
+    /**
+     * Handle auto commit.
+     *
+     * @return can be Void or Future
+     * @throws SQLException SQL exception
+     */
+    T handleAutoCommit() throws SQLException;
     
     /**
      * Close resources used in execution.
      *
+     * @return can be Void or Future
      * @throws BackendConnectionException backend connection exception
      */
-    void closeExecutionResources() throws BackendConnectionException;
+    T closeExecutionResources() throws BackendConnectionException;
     
     /**
      * Close all resources.
-     * 
+     *
+     * @return can be Void or Future
      * @throws BackendConnectionException backend connection exception
      */
-    void closeAllResources() throws BackendConnectionException;
+    T closeAllResources() throws BackendConnectionException;
 }

@@ -19,10 +19,11 @@ package org.apache.shardingsphere.infra.federation.executor;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
+import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutor;
-import org.apache.shardingsphere.infra.federation.executor.original.OriginalFilterableExecutor;
+import org.apache.shardingsphere.infra.federation.executor.original.OriginalFederationExecutor;
 import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
+import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
 
 /**
  * Federation executor factory.
@@ -33,14 +34,17 @@ public final class FederationExecutorFactory {
     /**
      * Create new instance of federation executor factory.
      * 
+     * @param databaseName database name
      * @param schemaName schema name
-     * @param optimizerContext filterable optimizer context 
+     * @param globalRuleMetaData global rule meta data
+     * @param optimizerContext filterable optimizer context
      * @param props configuration properties
      * @param jdbcExecutor jdbc executor
-     * @return new instance of federation executor
+     * @return created instance
      */
-    public static FederationExecutor newInstance(final String schemaName, final OptimizerContext optimizerContext, final ConfigurationProperties props, final JDBCExecutor jdbcExecutor) {
-        // TODO Consider about CustomizedFilterableExecutor
-        return new OriginalFilterableExecutor(schemaName, optimizerContext, props, jdbcExecutor);
+    public static FederationExecutor newInstance(final String databaseName, final String schemaName, final OptimizerContext optimizerContext,
+                                                 final ShardingSphereRuleMetaData globalRuleMetaData, final ConfigurationProperties props, final JDBCExecutor jdbcExecutor) {
+        // TODO Consider about AdvancedFederationExecutor
+        return new OriginalFederationExecutor(databaseName, schemaName, optimizerContext, globalRuleMetaData, props, jdbcExecutor);
     }
 }

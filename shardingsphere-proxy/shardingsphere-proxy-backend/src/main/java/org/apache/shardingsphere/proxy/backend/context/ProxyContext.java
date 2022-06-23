@@ -21,16 +21,16 @@ import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.state.StateContext;
 import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.datasource.JDBCBackendDataSource;
 import org.apache.shardingsphere.proxy.backend.exception.NoDatabaseSelectedException;
-import org.apache.shardingsphere.migration.common.api.ScalingWorker;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Optional;
 
 /**
  * Proxy context.
@@ -43,56 +43,56 @@ public final class ProxyContext {
     
     private final JDBCBackendDataSource backendDataSource = new JDBCBackendDataSource();
     
-    private volatile ContextManager contextManager = new ContextManager();
-    
-    /**
-     * Get instance of proxy schema schemas.
-     *
-     * @return instance of ShardingSphere schemas.
-     */
-    public static ProxyContext getInstance() {
-        return INSTANCE;
-    }
+    private ContextManager contextManager;
     
     /**
      * Initialize proxy context.
      *
      * @param contextManager context manager
      */
-    public void init(final ContextManager contextManager) {
-        this.contextManager = contextManager;
+    public static void init(final ContextManager contextManager) {
+        INSTANCE.contextManager = contextManager;
     }
     
     /**
-     * Check schema exists.
+     * Get instance of proxy context.
      *
-     * @param schemaName schema name
-     * @return schema exists or not
+     * @return got instance
      */
-    public boolean schemaExists(final String schemaName) {
-        return contextManager.getMetaDataContexts().getAllSchemaNames().contains(schemaName);
+    public static ProxyContext getInstance() {
+        return INSTANCE;
     }
     
     /**
-     * Get ShardingSphere meta data.
+     * Check database exists.
      *
-     * @param schemaName schema name
-     * @return ShardingSphere meta data
+     * @param name database name
+     * @return database exists or not
      */
-    public ShardingSphereMetaData getMetaData(final String schemaName) {
-        if (Strings.isNullOrEmpty(schemaName) || !contextManager.getMetaDataContexts().getAllSchemaNames().contains(schemaName)) {
+    public boolean databaseExists(final String name) {
+        return contextManager.getMetaDataContexts().getMetaData().getDatabases().containsKey(name);
+    }
+    
+    /**
+     * Get database.
+     *
+     * @param name database name
+     * @return got database
+     */
+    public ShardingSphereDatabase getDatabase(final String name) {
+        if (Strings.isNullOrEmpty(name) || !contextManager.getMetaDataContexts().getMetaData().getDatabases().containsKey(name)) {
             throw new NoDatabaseSelectedException();
         }
-        return contextManager.getMetaDataContexts().getMetaData(schemaName);
+        return contextManager.getMetaDataContexts().getMetaData().getDatabases().get(name);
     }
     
     /**
-     * Get all schema names.
+     * Get all database names.
      *
-     * @return all schema names
+     * @return all database names
      */
-    public Collection<String> getAllSchemaNames() {
-        return contextManager.getMetaDataContexts().getAllSchemaNames();
+    public Collection<String> getAllDatabaseNames() {
+        return contextManager.getMetaDataContexts().getMetaData().getDatabases().keySet();
     }
     
     /**
@@ -100,8 +100,8 @@ public final class ProxyContext {
      * 
      * @return state context
      */
-    public StateContext getStateContext() {
-        return contextManager.getStateContext();
+    public Optional<StateContext> getStateContext() {
+        return null == contextManager.getInstanceContext() ? Optional.empty() : Optional.ofNullable(contextManager.getInstanceContext().getInstance().getState());
     }
     
     /**
@@ -113,19 +113,10 @@ public final class ProxyContext {
     // TODO performance enhancement: cache when call init() and pay attention for refresh of rule modification
     public Collection<ShardingSphereRule> getRules(final String databaseName) {
         Collection<ShardingSphereRule> result = new LinkedList<>();
-        if (!Strings.isNullOrEmpty(databaseName) && schemaExists(databaseName)) {
-            result.addAll(contextManager.getMetaDataContexts().getMetaData(databaseName).getRuleMetaData().getRules());
+        if (!Strings.isNullOrEmpty(databaseName) && databaseExists(databaseName)) {
+            result.addAll(contextManager.getMetaDataContexts().getMetaData().getDatabases().get(databaseName).getRuleMetaData().getRules());
         }
-        result.addAll(contextManager.getMetaDataContexts().getGlobalRuleMetaData().getRules());
+        result.addAll(contextManager.getMetaDataContexts().getMetaData().getGlobalRuleMetaData().getRules());
         return result;
-    }
-    
-    /**
-     * Check if scaling is enabled.
-     * 
-     * @return true if scaling enabled, false if not
-     */
-    public boolean isScalingEnabled() {
-        return ScalingWorker.isEnabled();
     }
 }

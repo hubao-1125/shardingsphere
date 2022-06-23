@@ -26,6 +26,21 @@
         </projections>
     </select>
 
+    <select sql-case-id="select_sum_column">
+        <from>
+            <simple-table name="t_order" start-index="48" stop-index="54" />
+        </from>
+        <projections start-index="7" stop-index="41">
+            <aggregation-projection type="SUM" inner-expression="(t_order.user_id)" alias="user_id_sum" start-index="7" stop-index="26">
+                <paramters>
+                    <column name="user_id" start-index="17" stop-index="25">
+                        <owner name="t_order" start-index="8" stop-index="16"/>
+                    </column>
+                </paramters>
+            </aggregation-projection>
+        </projections>
+    </select>
+
     <select sql-case-id="select_count">
         <from>
             <simple-table name="t_order" start-index="37" stop-index="43" />
@@ -191,11 +206,11 @@
                                         <list-expression start-index="135" stop-index="140">
                                             <items>
                                                 <literal-expression value="1" start-index="136" stop-index="136" />
-                                                <parameter-marker-expression value="0" start-index="136" stop-index="136" />
+                                                <parameter-marker-expression parameter-index="0" start-index="136" stop-index="136" />
                                             </items>
                                             <items>
                                                 <literal-expression value="2" start-index="139" stop-index="139" />
-                                                <parameter-marker-expression value="1" start-index="139" stop-index="139" />
+                                                <parameter-marker-expression parameter-index="1" start-index="139" stop-index="139" />
                                             </items>
                                         </list-expression>
                                     </right>
@@ -214,11 +229,11 @@
                             </left>
                             <between-expr>
                                 <literal-expression value="9" start-index="165" stop-index="165" />
-                                <parameter-marker-expression value="2" start-index="165" stop-index="165" />
+                                <parameter-marker-expression parameter-index="2" start-index="165" stop-index="165" />
                             </between-expr>
                             <and-expr>
                                 <literal-expression value="10" start-index="171" stop-index="172" />
-                                <parameter-marker-expression value="3" start-index="171" stop-index="171" />
+                                <parameter-marker-expression parameter-index="3" start-index="171" stop-index="171" />
                             </and-expr>
                         </between-expression>
                     </right>
@@ -291,11 +306,11 @@
                                 <list-expression start-index="138" stop-index="143">
                                     <items>
                                         <literal-expression value="1" start-index="139" stop-index="139" />
-                                        <parameter-marker-expression value="0" start-index="139" stop-index="139" />
+                                        <parameter-marker-expression parameter-index="0" start-index="139" stop-index="139" />
                                     </items>
                                     <items>
                                         <literal-expression value="2" start-index="142" stop-index="142" />
-                                        <parameter-marker-expression value="1" start-index="142" stop-index="142" />
+                                        <parameter-marker-expression parameter-index="1" start-index="142" stop-index="142" />
                                     </items>
                                 </list-expression>
                             </right>
@@ -312,11 +327,11 @@
                             </left>
                             <between-expr>
                                 <literal-expression value="9" start-index="168" stop-index="168" />
-                                <parameter-marker-expression value="2" start-index="168" stop-index="168" />
+                                <parameter-marker-expression parameter-index="2" start-index="168" stop-index="168" />
                             </between-expr>
                             <and-expr>
                                 <literal-expression value="10" start-index="174" stop-index="175" />
-                                <parameter-marker-expression value="3" start-index="174" stop-index="174" />
+                                <parameter-marker-expression parameter-index="3" start-index="174" stop-index="174" />
                             </and-expr>
                         </between-expression>
                     </right>
@@ -370,11 +385,11 @@
                         <list-expression start-index="49" stop-index="54">
                             <items>
                                 <literal-expression value="1" start-index="50" stop-index="50" />
-                                <parameter-marker-expression value="0" start-index="50" stop-index="50" />
+                                <parameter-marker-expression parameter-index="0" start-index="50" stop-index="50" />
                             </items>
                             <items>
                                 <literal-expression value="2" start-index="53" stop-index="53" />
-                                <parameter-marker-expression value="1" start-index="53" stop-index="53" />
+                                <parameter-marker-expression parameter-index="1" start-index="53" stop-index="53" />
                             </items>
                         </list-expression>
                     </right>
@@ -403,11 +418,11 @@
                                 <list-expression start-index="47" stop-index="52">
                                     <items>
                                         <literal-expression value="1" start-index="48" stop-index="48" />
-                                        <parameter-marker-expression value="0" start-index="48" stop-index="48" />
+                                        <parameter-marker-expression parameter-index="0" start-index="48" stop-index="48" />
                                     </items>
                                     <items>
                                         <literal-expression value="2" start-index="51" stop-index="51" />
-                                        <parameter-marker-expression value="1" start-index="51" stop-index="51" />
+                                        <parameter-marker-expression parameter-index="1" start-index="51" stop-index="51" />
                                     </items>
                                 </list-expression>
                             </right>
@@ -424,11 +439,11 @@
                                 <list-expression start-index="76" stop-index="81">
                                     <items>
                                         <literal-expression value="7" start-index="77" stop-index="77" />
-                                        <parameter-marker-expression value="2" start-index="77" stop-index="77" />
+                                        <parameter-marker-expression parameter-index="2" start-index="77" stop-index="77" />
                                     </items>
                                     <items>
                                         <literal-expression value="9" start-index="80" stop-index="80" />
-                                        <parameter-marker-expression value="3" start-index="80" stop-index="80" />
+                                        <parameter-marker-expression parameter-index="3" start-index="80" stop-index="80" />
                                     </items>
                                 </list-expression>
                             </right>

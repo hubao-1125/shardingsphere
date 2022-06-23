@@ -24,12 +24,14 @@ ShardingSphere-JDBC 是 Apache ShardingSphere 的第一个产品，也是 Apache
 | --------- | --------------------- | ---------------------- |
 | 数据库     | `任意`                | MySQL/PostgreSQL       |
 | 连接消耗数 | `高`                  | 低                      |
-| 异构语言   | `仅Java`              | 任意                    |
+| 异构语言   | `仅 Java`              | 任意                    |
 | 性能       | `损耗低`              | 损耗略高                |
 | 无中心化   | `是`                  | 否                     |
 | 静态入口   | `无`                  | 有                     |
 
 ShardingSphere-JDBC 的优势在于对 Java 应用的友好度。
+
+**源码：https://github.com/apache/shardingsphere/tree/master/shardingsphere-jdbc**
 
 ## ShardingSphere-Proxy
 
@@ -46,12 +48,14 @@ ShardingSphere-Proxy 是 Apache ShardingSphere 的第二个产品。
 | --------- | --------------------- | ----------------------- |
 | 数据库     | 任意                  | `MySQL/PostgreSQL`      |
 | 连接消耗数 | 高                    | `低`                     |
-| 异构语言   | 仅Java                | `任意`                   |
+| 异构语言   | 仅 Java                | `任意`                   |
 | 性能       | 损耗低                | `损耗略高`                |
 | 无中心化   | 是                    | `否`                     |
 | 静态入口   | 无                    | `有`                     |
 
 ShardingSphere-Proxy 的优势在于对异构语言的支持，以及为 DBA 提供可操作入口。
+
+**源码：https://github.com/apache/shardingsphere/tree/master/shardingsphere-proxy**
 
 ## 混合架构
 

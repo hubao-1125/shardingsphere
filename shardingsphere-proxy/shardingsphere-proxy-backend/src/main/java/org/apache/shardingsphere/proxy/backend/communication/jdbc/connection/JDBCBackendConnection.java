@@ -22,48 +22,33 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.db.protocol.parameter.TypeUnspecifiedSQLParameter;
-import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
-import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.ExecutorJDBCManager;
-import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.StatementOption;
+import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.ExecutorJDBCConnectionManager;
 import org.apache.shardingsphere.infra.federation.executor.FederationExecutor;
 import org.apache.shardingsphere.proxy.backend.communication.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngine;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.statement.StatementMemoryStrictlyFetchSizeSetter;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction.BackendTransactionManager;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.JDBCDatabaseCommunicationEngine;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction.JDBCBackendTransactionManager;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.BackendConnectionException;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.spi.typed.TypedSPI;
+import org.apache.shardingsphere.proxy.backend.util.TransactionUtil;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * JDBC backend connection.
  */
 @Getter
 @Setter
-public final class JDBCBackendConnection implements BackendConnection, ExecutorJDBCManager {
-    
-    static {
-        ShardingSphereServiceLoader.register(StatementMemoryStrictlyFetchSizeSetter.class);
-    }
+public final class JDBCBackendConnection implements BackendConnection<Void>, ExecutorJDBCConnectionManager {
     
     private final ConnectionSession connectionSession;
     
@@ -71,31 +56,22 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
     
     private final Multimap<String, Connection> cachedConnections = LinkedHashMultimap.create();
     
-    private final Collection<DatabaseCommunicationEngine> databaseCommunicationEngines = Collections.newSetFromMap(new ConcurrentHashMap<>(64));
+    private final Collection<JDBCDatabaseCommunicationEngine> databaseCommunicationEngines = Collections.newSetFromMap(new ConcurrentHashMap<>(64));
     
-    private final Collection<DatabaseCommunicationEngine> inUseDatabaseCommunicationEngines = Collections.newSetFromMap(new ConcurrentHashMap<>(64));
+    private final Collection<JDBCDatabaseCommunicationEngine> inUseDatabaseCommunicationEngines = Collections.newSetFromMap(new ConcurrentHashMap<>(64));
     
-    private final Collection<ConnectionPostProcessor> connectionPostProcessors = new LinkedList<>();
+    private final Collection<ConnectionPostProcessor<Connection>> connectionPostProcessors = new LinkedList<>();
     
     private final ResourceLock resourceLock = new ResourceLock();
     
-    private final ConnectionStatus connectionStatus = new ConnectionStatus();
-    
-    private final Map<String, StatementMemoryStrictlyFetchSizeSetter> fetchSizeSetters;
+    private volatile int connectionReferenceCount;
     
     public JDBCBackendConnection(final ConnectionSession connectionSession) {
         this.connectionSession = connectionSession;
-        fetchSizeSetters = ShardingSphereServiceLoader.getSingletonServiceInstances(StatementMemoryStrictlyFetchSizeSetter.class).stream()
-                .collect(Collectors.toMap(TypedSPI::getType, Function.identity()));
     }
     
     @Override
     public List<Connection> getConnections(final String dataSourceName, final int connectionSize, final ConnectionMode connectionMode) throws SQLException {
-        return connectionSession.getTransactionStatus().isInTransaction()
-                ? getConnectionsWithTransaction(dataSourceName, connectionSize, connectionMode) : getConnectionsWithoutTransaction(dataSourceName, connectionSize, connectionMode);
-    }
-    
-    private List<Connection> getConnectionsWithTransaction(final String dataSourceName, final int connectionSize, final ConnectionMode connectionMode) throws SQLException {
         Collection<Connection> connections;
         synchronized (cachedConnections) {
             connections = cachedConnections.get(dataSourceName);
@@ -121,61 +97,34 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
     }
     
     private List<Connection> createNewConnections(final String dataSourceName, final int connectionSize, final ConnectionMode connectionMode) throws SQLException {
-        Preconditions.checkNotNull(connectionSession.getSchemaName(), "Current schema is null.");
-        List<Connection> result = ProxyContext.getInstance().getBackendDataSource().getConnections(connectionSession.getSchemaName(), dataSourceName, connectionSize, connectionMode);
+        Preconditions.checkNotNull(connectionSession.getDatabaseName(), "Current schema is null.");
+        List<Connection> result = ProxyContext.getInstance().getBackendDataSource().getConnections(connectionSession.getDatabaseName(), dataSourceName, connectionSize, connectionMode);
         for (Connection each : result) {
-            replayMethodsInvocation(each);
+            replayTransactionOption(each);
         }
-        return result;
-    }
-    
-    private List<Connection> getConnectionsWithoutTransaction(final String dataSourceName, final int connectionSize, final ConnectionMode connectionMode) throws SQLException {
-        Preconditions.checkNotNull(connectionSession.getSchemaName(), "Current schema is null.");
-        List<Connection> result = ProxyContext.getInstance().getBackendDataSource().getConnections(connectionSession.getSchemaName(), dataSourceName, connectionSize, connectionMode);
-        synchronized (cachedConnections) {
-            cachedConnections.putAll(dataSourceName, result);
+        if (connectionSession.getTransactionStatus().isInTransaction()) {
+            for (Connection each : result) {
+                replayMethodsInvocation(each);
+            }
         }
         return result;
     }
     
     private void replayMethodsInvocation(final Connection target) {
-        for (ConnectionPostProcessor each : connectionPostProcessors) {
+        for (ConnectionPostProcessor<Connection> each : connectionPostProcessors) {
             each.process(target);
         }
     }
     
-    @Override
-    public Statement createStorageResource(final Connection connection, final ConnectionMode connectionMode, final StatementOption option) throws SQLException {
-        Statement result = connection.createStatement();
-        if (ConnectionMode.MEMORY_STRICTLY == connectionMode) {
-            setFetchSize(result);
+    private void replayTransactionOption(final Connection connection) throws SQLException {
+        if (null == connection) {
+            return;
         }
-        return result;
-    }
-    
-    @Override
-    public PreparedStatement createStorageResource(final String sql, final List<Object> parameters, 
-                                                   final Connection connection, final ConnectionMode connectionMode, final StatementOption option) throws SQLException {
-        PreparedStatement result = option.isReturnGeneratedKeys()
-                ? connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS) : connection.prepareStatement(sql);
-        for (int i = 0; i < parameters.size(); i++) {
-            Object parameter = parameters.get(i);
-            if (parameter instanceof TypeUnspecifiedSQLParameter) {
-                result.setObject(i + 1, parameter, Types.OTHER);
-            } else {
-                result.setObject(i + 1, parameter);
-            }
+        if (connectionSession.isReadOnly()) {
+            connection.setReadOnly(true);
         }
-        if (ConnectionMode.MEMORY_STRICTLY == connectionMode) {
-            setFetchSize(result);
-        }
-        return result;
-    }
-    
-    private void setFetchSize(final Statement statement) throws SQLException {
-        DatabaseType databaseType = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData(connectionSession.getSchemaName()).getResource().getDatabaseType();
-        if (fetchSizeSetters.containsKey(databaseType.getName())) {
-            fetchSizeSetters.get(databaseType.getName()).setFetchSize(statement);
+        if (null != connectionSession.getIsolationLevel()) {
+            connection.setTransactionIsolation(TransactionUtil.getTransactionIsolationLevel(connectionSession.getIsolationLevel()));
         }
     }
     
@@ -203,7 +152,7 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
      *
      * @param databaseCommunicationEngine database communication engine to be added
      */
-    public void add(final DatabaseCommunicationEngine databaseCommunicationEngine) {
+    public void add(final JDBCDatabaseCommunicationEngine databaseCommunicationEngine) {
         databaseCommunicationEngines.add(databaseCommunicationEngine);
     }
     
@@ -212,7 +161,7 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
      *
      * @param databaseCommunicationEngine database communication engine to be added
      */
-    public void markResourceInUse(final DatabaseCommunicationEngine databaseCommunicationEngine) {
+    public void markResourceInUse(final JDBCDatabaseCommunicationEngine databaseCommunicationEngine) {
         inUseDatabaseCommunicationEngines.add(databaseCommunicationEngine);
     }
     
@@ -221,47 +170,55 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
      *
      * @param databaseCommunicationEngine database communication engine to be added
      */
-    public void unmarkResourceInUse(final DatabaseCommunicationEngine databaseCommunicationEngine) {
+    public void unmarkResourceInUse(final JDBCDatabaseCommunicationEngine databaseCommunicationEngine) {
         inUseDatabaseCommunicationEngines.remove(databaseCommunicationEngine);
     }
     
     @Override
-    public void prepareForTaskExecution() throws BackendConnectionException {
-        if (!connectionSession.getTransactionStatus().isInConnectionHeldTransaction()) {
-            connectionStatus.waitUntilConnectionRelease();
-            connectionStatus.switchToUsing();
+    public Void prepareForTaskExecution() {
+        synchronized (this) {
+            connectionReferenceCount++;
+            return null;
         }
+    }
+    
+    @Override
+    public Void handleAutoCommit() throws SQLException {
         if (!connectionSession.isAutoCommit() && !connectionSession.getTransactionStatus().isInTransaction()) {
-            BackendTransactionManager transactionManager = new BackendTransactionManager(this);
-            try {
-                transactionManager.begin();
-            } catch (SQLException ex) {
-                throw new BackendConnectionException(ex);
+            JDBCBackendTransactionManager transactionManager = new JDBCBackendTransactionManager(this);
+            transactionManager.begin();
+        }
+        return null;
+    }
+    
+    @Override
+    public Void closeExecutionResources() throws BackendConnectionException {
+        synchronized (this) {
+            if (connectionReferenceCount > 0 && connectionReferenceCount-- > 1) {
+                return null;
             }
+            Collection<Exception> result = new LinkedList<>();
+            result.addAll(closeDatabaseCommunicationEngines(false));
+            result.addAll(closeFederationExecutor());
+            if (!connectionSession.getTransactionStatus().isInConnectionHeldTransaction()) {
+                result.addAll(closeDatabaseCommunicationEngines(true));
+                result.addAll(closeConnections(false));
+            }
+            if (result.isEmpty()) {
+                return null;
+            }
+            throw new BackendConnectionException(result);
         }
     }
     
     @Override
-    public void closeExecutionResources() throws BackendConnectionException {
-        Collection<Exception> result = new LinkedList<>();
-        result.addAll(closeDatabaseCommunicationEngines(false));
-        result.addAll(closeFederationExecutor());
-        if (!connectionSession.getTransactionStatus().isInConnectionHeldTransaction()) {
-            result.addAll(closeDatabaseCommunicationEngines(true));
-            result.addAll(closeConnections(false));
-            connectionStatus.switchToReleased();
+    public Void closeAllResources() {
+        synchronized (this) {
+            closeDatabaseCommunicationEngines(true);
+            closeConnections(true);
+            closeFederationExecutor();
+            return null;
         }
-        if (result.isEmpty()) {
-            return;
-        }
-        throw new BackendConnectionException(result);
-    }
-    
-    @Override
-    public void closeAllResources() {
-        closeDatabaseCommunicationEngines(true);
-        closeConnections(true);
-        closeFederationExecutor();
     }
     
     /**
@@ -270,9 +227,9 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
      * @param includeInUse include engines in use
      * @return SQL exception when engine close
      */
-    public synchronized Collection<SQLException> closeDatabaseCommunicationEngines(final boolean includeInUse) {
+    public Collection<SQLException> closeDatabaseCommunicationEngines(final boolean includeInUse) {
         Collection<SQLException> result = new LinkedList<>();
-        for (DatabaseCommunicationEngine each : databaseCommunicationEngines) {
+        for (JDBCDatabaseCommunicationEngine each : databaseCommunicationEngines) {
             if (!includeInUse && inUseDatabaseCommunicationEngines.contains(each)) {
                 continue;
             }
@@ -295,13 +252,14 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
      * @param forceRollback is force rollback
      * @return SQL exception when connections close
      */
-    public synchronized Collection<SQLException> closeConnections(final boolean forceRollback) {
+    public Collection<SQLException> closeConnections(final boolean forceRollback) {
         Collection<SQLException> result = new LinkedList<>();
         for (Connection each : cachedConnections.values()) {
             try {
                 if (forceRollback && connectionSession.getTransactionStatus().isInTransaction()) {
                     each.rollback();
                 }
+                resetConnection(each);
                 each.close();
             } catch (final SQLException ex) {
                 result.add(ex);
@@ -312,12 +270,24 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
         return result;
     }
     
+    private void resetConnection(final Connection connection) throws SQLException {
+        if (null == connection) {
+            return;
+        }
+        if (connectionSession.isReadOnly()) {
+            connection.setReadOnly(false);
+        }
+        if (null != connectionSession.getDefaultIsolationLevel()) {
+            connection.setTransactionIsolation(TransactionUtil.getTransactionIsolationLevel(connectionSession.getIsolationLevel()));
+        }
+    }
+    
     /**
      * Close federation executor.
      * 
      * @return SQL exception when federation executor close
      */
-    public synchronized Collection<SQLException> closeFederationExecutor() {
+    public Collection<SQLException> closeFederationExecutor() {
         Collection<SQLException> result = new LinkedList<>();
         if (null != federationExecutor) {
             try {

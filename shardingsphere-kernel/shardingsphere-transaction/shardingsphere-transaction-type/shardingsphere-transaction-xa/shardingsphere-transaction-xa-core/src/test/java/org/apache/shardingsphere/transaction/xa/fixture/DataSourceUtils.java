@@ -38,15 +38,15 @@ public final class DataSourceUtils {
      * @param dataSourceClass data source
      * @param databaseType database type
      * @param databaseName database name
-     * @return data source
+     * @return built data source
      */
     public static DataSource build(final Class<? extends DataSource> dataSourceClass, final DatabaseType databaseType, final String databaseName) {
         if (HikariDataSource.class == dataSourceClass) {
             return createHikariDataSource(databaseType, databaseName);
-        } else if (AtomikosDataSourceBean.class == dataSourceClass) {
+        }
+        if (AtomikosDataSourceBean.class == dataSourceClass) {
             return createAtomikosDataSourceBean(databaseType, createHikariDataSource(databaseType, databaseName), databaseName);
         }
-        
         throw new UnsupportedOperationException(dataSourceClass.getName());
     }
     
@@ -57,8 +57,8 @@ public final class DataSourceUtils {
         result.setPassword("root");
         result.setMaximumPoolSize(10);
         result.setMinimumIdle(2);
-        result.setConnectionTimeout(15 * 1000);
-        result.setIdleTimeout(40 * 1000);
+        result.setConnectionTimeout(15 * 1000L);
+        result.setIdleTimeout(40 * 1000L);
         return result;
     }
     
@@ -70,7 +70,7 @@ public final class DataSourceUtils {
     }
     
     private static String getURL(final DatabaseType databaseType, final String databaseName) {
-        switch (databaseType.getName()) {
+        switch (databaseType.getType()) {
             case "MySQL":
                 return String.format("jdbc:mysql://localhost:3306/%s", databaseName);
             case "MariaDB":
@@ -86,7 +86,7 @@ public final class DataSourceUtils {
             case "H2":
                 return String.format("jdbc:h2:mem:%s;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL", databaseName);
             default:
-                throw new UnsupportedOperationException(databaseType.getName());
+                throw new UnsupportedOperationException(databaseType.getType());
         }
     }
 }

@@ -17,7 +17,8 @@
 
 package org.apache.shardingsphere.transaction;
 
-import org.apache.shardingsphere.transaction.context.TransactionContexts;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 import org.apache.shardingsphere.transaction.core.TransactionTypeHolder;
 import org.apache.shardingsphere.transaction.rule.TransactionRule;
@@ -34,19 +35,19 @@ public final class ConnectionTransaction {
     
     private final TransactionType transactionType;
     
+    @Setter
+    @Getter
+    private volatile boolean rollbackOnly;
+    
     private final ShardingSphereTransactionManager transactionManager;
     
-    public ConnectionTransaction(final String schemaName, final TransactionContexts transactionContexts) {
-        this(schemaName, TransactionType.LOCAL, transactionContexts);
+    public ConnectionTransaction(final String databaseName, final TransactionRule rule) {
+        this(databaseName, rule.getDefaultType(), rule);
     }
     
-    public ConnectionTransaction(final String schemaName, final TransactionRule rule, final TransactionContexts transactionContexts) {
-        this(schemaName, rule.getDefaultType(), transactionContexts);
-    }
-    
-    public ConnectionTransaction(final String schemaName, final TransactionType transactionType, final TransactionContexts transactionContexts) {
+    public ConnectionTransaction(final String databaseName, final TransactionType transactionType, final TransactionRule rule) {
         this.transactionType = transactionType;
-        transactionManager = transactionContexts.getEngines().get(schemaName).getTransactionManager(transactionType);
+        transactionManager = rule.getResources().get(databaseName).getTransactionManager(transactionType);
         TransactionTypeHolder.set(transactionType);
     }
     
@@ -100,7 +101,7 @@ public final class ConnectionTransaction {
      * Commit transaction.
      */
     public void commit() {
-        transactionManager.commit();
+        transactionManager.commit(rollbackOnly);
     }
     
     /**

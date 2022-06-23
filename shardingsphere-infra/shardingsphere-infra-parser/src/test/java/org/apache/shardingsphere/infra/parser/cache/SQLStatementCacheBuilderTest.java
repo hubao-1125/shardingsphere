@@ -17,9 +17,8 @@
 
 package org.apache.shardingsphere.infra.parser.cache;
 
-import com.google.common.cache.LoadingCache;
-import org.apache.shardingsphere.parser.rule.SQLParserRule;
-import org.apache.shardingsphere.parser.rule.builder.DefaultSQLParserRuleConfigurationBuilder;
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import org.apache.shardingsphere.sql.parser.api.CacheOption;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.isA;
@@ -29,7 +28,6 @@ public final class SQLStatementCacheBuilderTest {
     
     @Test
     public void assertBuild() {
-        SQLParserRule sqlParserRule = new SQLParserRule(new DefaultSQLParserRuleConfigurationBuilder().build());
-        assertThat(SQLStatementCacheBuilder.build(sqlParserRule, "MySQL"), isA(LoadingCache.class));
+        assertThat(SQLStatementCacheBuilder.build("MySQL", new CacheOption(2000, 65535L), new CacheOption(128, 1024L), false), isA(LoadingCache.class));
     }
 }

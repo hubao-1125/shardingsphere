@@ -17,8 +17,11 @@
 
 package org.apache.shardingsphere.proxy.frontend.opengauss;
 
+import lombok.AccessLevel;
 import lombok.Getter;
-import org.apache.shardingsphere.db.protocol.codec.DatabasePacketCodecEngine;
+import org.apache.shardingsphere.db.protocol.opengauss.codec.OpenGaussPacketCodecEngine;
+import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLServerInfo;
+import org.apache.shardingsphere.proxy.backend.exception.InTransactionException;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.frontend.context.FrontendContext;
 import org.apache.shardingsphere.proxy.frontend.opengauss.authentication.OpenGaussAuthenticationEngine;
@@ -29,15 +32,17 @@ import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngi
 /**
  * Frontend engine for openGauss.
  */
+@Getter
 public final class OpenGaussFrontendEngine implements DatabaseProtocolFrontendEngine {
     
+    @Getter(AccessLevel.NONE)
     private final PostgreSQLFrontendEngine postgreSQLFrontendEngine = new PostgreSQLFrontendEngine();
     
-    @Getter
+    private final OpenGaussAuthenticationEngine authenticationEngine = new OpenGaussAuthenticationEngine();
+    
     private final OpenGaussCommandExecuteEngine commandExecuteEngine = new OpenGaussCommandExecuteEngine();
     
-    @Getter
-    private final OpenGaussAuthenticationEngine authenticationEngine = new OpenGaussAuthenticationEngine();
+    private final OpenGaussPacketCodecEngine codecEngine = new OpenGaussPacketCodecEngine();
     
     @Override
     public FrontendContext getFrontendContext() {
@@ -45,8 +50,8 @@ public final class OpenGaussFrontendEngine implements DatabaseProtocolFrontendEn
     }
     
     @Override
-    public DatabasePacketCodecEngine<?> getCodecEngine() {
-        return postgreSQLFrontendEngine.getCodecEngine();
+    public void setDatabaseVersion(final String databaseName, final String databaseVersion) {
+        PostgreSQLServerInfo.setServerVersion(databaseVersion);
     }
     
     @Override
@@ -55,7 +60,14 @@ public final class OpenGaussFrontendEngine implements DatabaseProtocolFrontendEn
     }
     
     @Override
-    public String getDatabaseType() {
+    public void handleException(final ConnectionSession connectionSession, final Exception exception) {
+        if (connectionSession.getTransactionStatus().isInTransaction() && !connectionSession.getTransactionStatus().isRollbackOnly() && !(exception instanceof InTransactionException)) {
+            connectionSession.getTransactionStatus().setRollbackOnly(true);
+        }
+    }
+    
+    @Override
+    public String getType() {
         return "openGauss";
     }
 }

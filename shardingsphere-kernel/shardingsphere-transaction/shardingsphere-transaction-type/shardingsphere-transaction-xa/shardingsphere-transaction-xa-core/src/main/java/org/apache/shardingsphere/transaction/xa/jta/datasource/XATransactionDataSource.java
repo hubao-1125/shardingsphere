@@ -17,9 +17,8 @@
 
 package org.apache.shardingsphere.transaction.xa.jta.datasource;
 
-import com.google.common.collect.Sets;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.transaction.xa.jta.connection.XAConnectionFactory;
+import org.apache.shardingsphere.transaction.xa.jta.connection.XAConnectionWrapperFactory;
 import org.apache.shardingsphere.transaction.xa.spi.SingleXAResource;
 import org.apache.shardingsphere.transaction.xa.spi.XATransactionManagerProvider;
 
@@ -33,7 +32,10 @@ import javax.transaction.Transaction;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -41,9 +43,9 @@ import java.util.Set;
  */
 public final class XATransactionDataSource implements AutoCloseable {
     
-    private static final Set<String> CONTAINER_DATASOURCE_NAMES = Sets.newHashSet("AtomikosDataSourceBean", "BasicManagedDataSource");
+    private static final Set<String> CONTAINER_DATASOURCE_NAMES = new HashSet<>(Arrays.asList("AtomikosDataSourceBean", "BasicManagedDataSource"));
     
-    private final ThreadLocal<Set<Transaction>> enlistedTransactions = ThreadLocal.withInitial(HashSet::new);
+    private final ThreadLocal<Map<Transaction, Connection>> enlistedTransactions = ThreadLocal.withInitial(HashMap::new);
     
     private final DatabaseType databaseType;
     
@@ -78,25 +80,26 @@ public final class XATransactionDataSource implements AutoCloseable {
         if (CONTAINER_DATASOURCE_NAMES.contains(dataSource.getClass().getSimpleName())) {
             return dataSource.getConnection();
         }
-        Connection result = dataSource.getConnection();
-        XAConnection xaConnection = XAConnectionFactory.createXAConnection(databaseType, xaDataSource, result);
         Transaction transaction = xaTransactionManagerProvider.getTransactionManager().getTransaction();
-        if (!enlistedTransactions.get().contains(transaction)) {
+        if (!enlistedTransactions.get().containsKey(transaction)) {
+            Connection connection = dataSource.getConnection();
+            XAConnection xaConnection = XAConnectionWrapperFactory.getInstance(databaseType).wrap(xaDataSource, connection);
             transaction.enlistResource(new SingleXAResource(resourceName, xaConnection.getXAResource()));
             transaction.registerSynchronization(new Synchronization() {
+                
                 @Override
                 public void beforeCompletion() {
                     enlistedTransactions.get().remove(transaction);
                 }
-    
+                
                 @Override
                 public void afterCompletion(final int status) {
                     enlistedTransactions.get().clear();
                 }
             });
-            enlistedTransactions.get().add(transaction);
+            enlistedTransactions.get().put(transaction, connection);
         }
-        return result;
+        return enlistedTransactions.get().get(transaction);
     }
     
     @Override

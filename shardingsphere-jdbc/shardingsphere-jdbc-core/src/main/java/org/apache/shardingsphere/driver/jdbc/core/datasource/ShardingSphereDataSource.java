@@ -17,16 +17,20 @@
 
 package org.apache.shardingsphere.driver.jdbc.core.datasource;
 
-import lombok.Getter;
 import org.apache.shardingsphere.driver.jdbc.adapter.AbstractDataSourceAdapter;
+import org.apache.shardingsphere.driver.jdbc.context.JDBCContext;
 import org.apache.shardingsphere.driver.state.DriverStateContext;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.checker.RuleConfigurationCheckerFactory;
+import org.apache.shardingsphere.infra.config.database.impl.DataSourceProvidedDatabaseConfiguration;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
 import org.apache.shardingsphere.infra.config.scope.GlobalRuleConfiguration;
-import org.apache.shardingsphere.infra.config.scope.SchemaRuleConfiguration;
+import org.apache.shardingsphere.infra.instance.definition.InstanceDefinition;
+import org.apache.shardingsphere.infra.instance.definition.InstanceType;
 import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.mode.manager.ContextManagerBuilderFactory;
+import org.apache.shardingsphere.mode.manager.ContextManagerBuilderParameter;
+import org.apache.shardingsphere.mode.manager.instance.InstanceIdGeneratorFactory;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -42,46 +46,51 @@ import java.util.stream.Collectors;
 /**
  * ShardingSphere data source.
  */
-@Getter
 public final class ShardingSphereDataSource extends AbstractDataSourceAdapter implements AutoCloseable {
     
-    private final String schemaName;
+    private final String databaseName;
     
     private final ContextManager contextManager;
     
-    public ShardingSphereDataSource(final String schemaName, final ModeConfiguration modeConfig) throws SQLException {
-        this.schemaName = schemaName;
-        contextManager = createContextManager(schemaName, modeConfig, new HashMap<>(), new LinkedList<>(), new Properties(), false);
+    private final JDBCContext jdbcContext;
+    
+    public ShardingSphereDataSource(final String databaseName, final ModeConfiguration modeConfig) throws SQLException {
+        this.databaseName = databaseName;
+        contextManager = createContextManager(databaseName, modeConfig, new HashMap<>(), new LinkedList<>(), new Properties());
+        jdbcContext = new JDBCContext(contextManager.getDataSourceMap(databaseName));
     }
     
-    public ShardingSphereDataSource(final String schemaName, final ModeConfiguration modeConfig, final Map<String, DataSource> dataSourceMap,
+    public ShardingSphereDataSource(final String databaseName, final ModeConfiguration modeConfig, final Map<String, DataSource> dataSourceMap,
                                     final Collection<RuleConfiguration> ruleConfigs, final Properties props) throws SQLException {
-        checkRuleConfiguration(schemaName, ruleConfigs);
-        this.schemaName = schemaName;
-        contextManager = createContextManager(schemaName, modeConfig, dataSourceMap, ruleConfigs, props, null == modeConfig || modeConfig.isOverwrite());
+        checkRuleConfiguration(databaseName, ruleConfigs);
+        this.databaseName = databaseName;
+        contextManager = createContextManager(databaseName, modeConfig, dataSourceMap, ruleConfigs, null == props ? new Properties() : props);
+        jdbcContext = new JDBCContext(contextManager.getDataSourceMap(databaseName));
     }
     
     @SuppressWarnings("unchecked")
-    private void checkRuleConfiguration(final String schemaName, final Collection<RuleConfiguration> ruleConfigs) {
-        ruleConfigs.forEach(each -> RuleConfigurationCheckerFactory.newInstance(each).ifPresent(optional -> optional.check(schemaName, each)));
+    private void checkRuleConfiguration(final String databaseName, final Collection<RuleConfiguration> ruleConfigs) {
+        ruleConfigs.forEach(each -> RuleConfigurationCheckerFactory.findInstance(each).ifPresent(optional -> optional.check(databaseName, each)));
     }
     
-    private ContextManager createContextManager(final String schemaName, final ModeConfiguration modeConfig, final Map<String, DataSource> dataSourceMap,
-                                                final Collection<RuleConfiguration> ruleConfigs, final Properties props, final boolean isOverwrite) throws SQLException {
-        Map<String, Map<String, DataSource>> dataSourcesMap = Collections.singletonMap(schemaName, dataSourceMap);
-        Map<String, Collection<RuleConfiguration>> schemaRuleConfigs = Collections.singletonMap(
-                schemaName, ruleConfigs.stream().filter(each -> each instanceof SchemaRuleConfiguration).collect(Collectors.toList()));
-        Collection<RuleConfiguration> globalRuleConfigs = ruleConfigs.stream().filter(each -> each instanceof GlobalRuleConfiguration).collect(Collectors.toList());
-        return ContextManagerBuilderFactory.newInstance(modeConfig).build(modeConfig, dataSourcesMap, schemaRuleConfigs, globalRuleConfigs, props, isOverwrite, null);
-    }
-    
-    @Override
-    public Connection getConnection() {
-        return DriverStateContext.getConnection(schemaName, contextManager);
+    private ContextManager createContextManager(final String databaseName, final ModeConfiguration modeConfig, final Map<String, DataSource> dataSourceMap,
+                                                final Collection<RuleConfiguration> ruleConfigs, final Properties props) throws SQLException {
+        ContextManagerBuilderParameter parameter = ContextManagerBuilderParameter.builder()
+                .modeConfig(modeConfig)
+                .databaseConfigs(Collections.singletonMap(databaseName, new DataSourceProvidedDatabaseConfiguration(dataSourceMap, ruleConfigs)))
+                .globalRuleConfigs(ruleConfigs.stream().filter(each -> each instanceof GlobalRuleConfiguration).collect(Collectors.toList()))
+                .props(props)
+                .instanceDefinition(new InstanceDefinition(InstanceType.JDBC, InstanceIdGeneratorFactory.getInstance(modeConfig).generate(InstanceType.JDBC))).build();
+        return ContextManagerBuilderFactory.getInstance(modeConfig).build(parameter);
     }
     
     @Override
-    public Connection getConnection(final String username, final String password) {
+    public Connection getConnection() throws SQLException {
+        return DriverStateContext.getConnection(databaseName, contextManager, jdbcContext);
+    }
+    
+    @Override
+    public Connection getConnection(final String username, final String password) throws SQLException {
         return getConnection();
     }
     
@@ -92,7 +101,7 @@ public final class ShardingSphereDataSource extends AbstractDataSourceAdapter im
      * @throws Exception exception
      */
     public void close(final Collection<String> dataSourceNames) throws Exception {
-        Map<String, DataSource> dataSourceMap = contextManager.getDataSourceMap(schemaName);
+        Map<String, DataSource> dataSourceMap = contextManager.getDataSourceMap(databaseName);
         for (String each : dataSourceNames) {
             close(dataSourceMap.get(each));
         }
@@ -107,18 +116,18 @@ public final class ShardingSphereDataSource extends AbstractDataSourceAdapter im
     
     @Override
     public void close() throws Exception {
-        close(contextManager.getDataSourceMap(schemaName).keySet());
+        close(contextManager.getDataSourceMap(databaseName).keySet());
     }
     
     @Override
     public int getLoginTimeout() throws SQLException {
-        Map<String, DataSource> dataSourceMap = contextManager.getDataSourceMap(schemaName);
+        Map<String, DataSource> dataSourceMap = contextManager.getDataSourceMap(databaseName);
         return dataSourceMap.isEmpty() ? 0 : dataSourceMap.values().iterator().next().getLoginTimeout();
     }
     
     @Override
     public void setLoginTimeout(final int seconds) throws SQLException {
-        for (DataSource each : contextManager.getDataSourceMap(schemaName).values()) {
+        for (DataSource each : contextManager.getDataSourceMap(databaseName).values()) {
             each.setLoginTimeout(seconds);
         }
     }

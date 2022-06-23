@@ -17,22 +17,16 @@
 
 package org.apache.shardingsphere.readwritesplitting.route.impl;
 
-import com.google.common.base.Strings;
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.infra.aware.DataSourceNameAware;
-import org.apache.shardingsphere.infra.aware.DataSourceNameAwareFactory;
 import org.apache.shardingsphere.infra.binder.statement.CommonSQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.hint.HintManager;
-import org.apache.shardingsphere.transaction.TransactionHolder;
 import org.apache.shardingsphere.readwritesplitting.rule.ReadwriteSplittingDataSourceRule;
+import org.apache.shardingsphere.readwritesplitting.strategy.type.DynamicReadwriteSplittingStrategy;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.handler.dml.SelectStatementHandler;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Optional;
 
 /**
  * Data source router for readwrite-splitting.
@@ -50,37 +44,34 @@ public final class ReadwriteSplittingDataSourceRouter {
      */
     public String route(final SQLStatementContext<?> sqlStatementContext) {
         if (isPrimaryRoute(sqlStatementContext)) {
-            String autoAwareDataSourceName = rule.getAutoAwareDataSourceName();
-            if (Strings.isNullOrEmpty(autoAwareDataSourceName)) {
-                return rule.getWriteDataSourceName();
-            }
-            Optional<DataSourceNameAware> dataSourceNameAware = DataSourceNameAwareFactory.getInstance().getDataSourceNameAware();
-            if (dataSourceNameAware.isPresent()) {
-                return dataSourceNameAware.get().getPrimaryDataSourceName(autoAwareDataSourceName);
-            }
+            return rule.getWriteDataSource();
         }
-        String autoAwareDataSourceName = rule.getAutoAwareDataSourceName();
-        if (Strings.isNullOrEmpty(autoAwareDataSourceName)) {
-            return rule.getLoadBalancer().getDataSource(rule.getName(), rule.getWriteDataSourceName(), rule.getReadDataSourceNames());
-        }
-        Optional<DataSourceNameAware> dataSourceNameAware = DataSourceNameAwareFactory.getInstance().getDataSourceNameAware();
-        if (dataSourceNameAware.isPresent()) {
-            Collection<String> replicaDataSourceNames = dataSourceNameAware.get().getReplicaDataSourceNames(autoAwareDataSourceName);
-            return rule.getLoadBalancer().getDataSource(rule.getName(), rule.getWriteDataSourceName(), new ArrayList<>(replicaDataSourceNames));
-        }
-        return rule.getLoadBalancer().getDataSource(rule.getName(), rule.getWriteDataSourceName(), rule.getReadDataSourceNames());
+        return rule.getLoadBalancer().getDataSource(rule.getName(), rule.getWriteDataSource(), rule.getEnabledReplicaDataSources());
     }
     
     private boolean isPrimaryRoute(final SQLStatementContext<?> sqlStatementContext) {
+        return isWriteRouteStatement(sqlStatementContext) || isHintWriteRouteOnly(sqlStatementContext) || isAllowWriteDataSourceQuery();
+    }
+    
+    private boolean isWriteRouteStatement(final SQLStatementContext<?> sqlStatementContext) {
         SQLStatement sqlStatement = sqlStatementContext.getSqlStatement();
-        return containsLockSegment(sqlStatement) || !(sqlStatement instanceof SelectStatement) || isHintWriteRouteOnly(sqlStatementContext) || TransactionHolder.isTransaction();
+        return containsLockSegment(sqlStatement) || containsLastInsertIdProjection(sqlStatementContext) || !(sqlStatement instanceof SelectStatement);
+    }
+    
+    private boolean containsLockSegment(final SQLStatement sqlStatement) {
+        return sqlStatement instanceof SelectStatement && SelectStatementHandler.getLockSegment((SelectStatement) sqlStatement).isPresent();
+    }
+    
+    private boolean containsLastInsertIdProjection(final SQLStatementContext<?> sqlStatementContext) {
+        return sqlStatementContext instanceof SelectStatementContext && ((SelectStatementContext) sqlStatementContext).getProjectionsContext().isContainsLastInsertIdProjection();
     }
     
     private boolean isHintWriteRouteOnly(final SQLStatementContext<?> sqlStatementContext) {
         return HintManager.isWriteRouteOnly() || (sqlStatementContext instanceof CommonSQLStatementContext && ((CommonSQLStatementContext<?>) sqlStatementContext).isHintWriteRouteOnly());
     }
     
-    private boolean containsLockSegment(final SQLStatement sqlStatement) {
-        return sqlStatement instanceof SelectStatement && SelectStatementHandler.getLockSegment((SelectStatement) sqlStatement).isPresent();
+    private boolean isAllowWriteDataSourceQuery() {
+        return rule.getEnabledReplicaDataSources().isEmpty() && (rule.getReadwriteSplittingStrategy() instanceof DynamicReadwriteSplittingStrategy)
+                && ((DynamicReadwriteSplittingStrategy) rule.getReadwriteSplittingStrategy()).isAllowWriteDataSourceQuery();
     }
 }

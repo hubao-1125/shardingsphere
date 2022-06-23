@@ -20,7 +20,7 @@ package org.apache.shardingsphere.sharding.distsql.query;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
 import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
-import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.keygen.KeyGenerateStrategyConfiguration;
@@ -45,10 +45,10 @@ public final class ShardingTableRuleQueryResultSetTest {
     
     @Test
     public void assertGetRowData() {
-        ShardingSphereMetaData metaData = mock(ShardingSphereMetaData.class, RETURNS_DEEP_STUBS);
-        when(metaData.getRuleMetaData().getConfigurations()).thenReturn(Collections.singleton(createRuleConfiguration()));
+        ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
+        when(database.getRuleMetaData().getConfigurations()).thenReturn(Collections.singleton(createRuleConfiguration()));
         DistSQLResultSet resultSet = new ShardingTableRuleQueryResultSet();
-        resultSet.init(metaData, mock(ShowShardingTableRulesStatement.class));
+        resultSet.init(database, mock(ShowShardingTableRulesStatement.class));
         List<Object> actual = new ArrayList<>(resultSet.getRowData());
         assertThat(actual.size(), is(14));
         assertThat(actual.get(0), is("t_order"));
@@ -64,7 +64,6 @@ public final class ShardingTableRuleQueryResultSetTest {
         assertThat(actual.get(10), is("algorithm-expression=t_order_${order_id % 2}"));
         assertThat(actual.get(11), is("order_id"));
         assertThat(actual.get(12), is("SNOWFLAKE"));
-        assertThat(actual.get(13), is("worker-id=123"));
     }
     
     private RuleConfiguration createRuleConfiguration() {
@@ -93,8 +92,6 @@ public final class ShardingTableRuleQueryResultSetTest {
     }
     
     private ShardingSphereAlgorithmConfiguration createKeyGeneratorConfiguration() {
-        Properties props = new Properties();
-        props.put("worker-id", "123");
-        return new ShardingSphereAlgorithmConfiguration("SNOWFLAKE", props);
+        return new ShardingSphereAlgorithmConfiguration("SNOWFLAKE", new Properties());
     }
 }

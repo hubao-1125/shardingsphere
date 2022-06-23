@@ -69,15 +69,6 @@ public interface CommandExecuteEngine {
      * Get error packet.
      *
      * @param cause cause of error
-     * @param connectionSession connection session
-     * @return error packet
-     */
-    DatabasePacket<?> getErrorPacket(Exception cause, ConnectionSession connectionSession);
-    
-    /**
-     * Get error packet.
-     *
-     * @param cause cause of error
      * @return error packet
      */
     DatabasePacket<?> getErrorPacket(Exception cause);
@@ -97,8 +88,7 @@ public interface CommandExecuteEngine {
      * @param backendConnection backend connection
      * @param queryCommandExecutor query command executor
      * @param headerPackagesCount count of header packages
-     * @return is need flush
      * @throws SQLException SQL exception
      */
-    boolean writeQueryData(ChannelHandlerContext context, BackendConnection backendConnection, QueryCommandExecutor queryCommandExecutor, int headerPackagesCount) throws SQLException;
+    void writeQueryData(ChannelHandlerContext context, BackendConnection backendConnection, QueryCommandExecutor queryCommandExecutor, int headerPackagesCount) throws SQLException;
 }

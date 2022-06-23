@@ -18,9 +18,9 @@
 package org.apache.shardingsphere.encrypt.algorithm;
 
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
+import org.apache.shardingsphere.encrypt.spi.context.EncryptContext;
 
 import java.util.Properties;
 
@@ -28,25 +28,22 @@ import java.util.Properties;
  * MD5 encrypt algorithm.
  */
 @Getter
-@Setter
 public final class MD5EncryptAlgorithm implements EncryptAlgorithm<Object, String> {
     
-    private Properties props = new Properties();
+    private Properties props;
     
     @Override
-    public void init() {
+    public void init(final Properties props) {
+        this.props = props;
     }
     
     @Override
-    public String encrypt(final Object plainValue) {
-        if (null == plainValue) {
-            return null;
-        }
-        return DigestUtils.md5Hex(String.valueOf(plainValue));
+    public String encrypt(final Object plainValue, final EncryptContext encryptContext) {
+        return null == plainValue ? null : DigestUtils.md5Hex(String.valueOf(plainValue));
     }
     
     @Override
-    public Object decrypt(final String cipherValue) {
+    public Object decrypt(final String cipherValue, final EncryptContext encryptContext) {
         return cipherValue;
     }
     

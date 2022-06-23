@@ -17,6 +17,8 @@
 
 package org.apache.shardingsphere.encrypt.distsql.parser.segment;
 
+import com.google.common.base.Strings;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.distsql.parser.segment.AlgorithmSegment;
@@ -25,6 +27,7 @@ import org.apache.shardingsphere.sql.parser.api.visitor.ASTNode;
 /**
  * Encrypt column segment.
  */
+@AllArgsConstructor
 @RequiredArgsConstructor
 @Getter
 public final class EncryptColumnSegment implements ASTNode {
@@ -37,5 +40,42 @@ public final class EncryptColumnSegment implements ASTNode {
     
     private final String assistedQueryColumn;
     
+    private String dataType;
+    
+    private String cipherDataType;
+    
+    private String plainDataType;
+    
+    private String assistedQueryDataType;
+    
     private final AlgorithmSegment encryptor;
+    
+    private final AlgorithmSegment assistedQueryEncryptor;
+    
+    public EncryptColumnSegment(final String name, final String cipherColumn, final String plainColumn, final String assistedQueryColumn, final AlgorithmSegment encryptor) {
+        this(name, cipherColumn, plainColumn, assistedQueryColumn, encryptor, null);
+    }
+    
+    public EncryptColumnSegment(final String name, final String cipherColumn, final String plainColumn, final String assistedQueryColumn, final String dataType, final String cipherDataType,
+                                final String plainDataType, final String assistedQueryDataType, final AlgorithmSegment encryptor) {
+        this(name, cipherColumn, plainColumn, assistedQueryColumn, dataType, cipherDataType, plainDataType, assistedQueryDataType, encryptor, null);
+    }
+    
+    /**
+     * Is the data type correct.
+     *
+     * @return correct or not
+     */
+    public boolean isCorrectDataType() {
+        boolean requireDataType = !Strings.isNullOrEmpty(dataType);
+        return isCorrectDataType(requireDataType, name, dataType) && isCorrectDataType(requireDataType, plainColumn, plainDataType)
+                && isCorrectDataType(requireDataType, cipherColumn, cipherDataType) && isCorrectDataType(requireDataType, assistedQueryColumn, assistedQueryDataType);
+    }
+    
+    private boolean isCorrectDataType(final boolean requireDataType, final String field, final String fieldDataType) {
+        boolean noDataTypeRequired = !requireDataType && Strings.isNullOrEmpty(fieldDataType);
+        boolean requireDataTypeAndFieldExisted = requireDataType && !Strings.isNullOrEmpty(field) && !Strings.isNullOrEmpty(fieldDataType);
+        boolean requireDataTypeAndFieldNotExisted = requireDataType && Strings.isNullOrEmpty(field) && Strings.isNullOrEmpty(fieldDataType);
+        return noDataTypeRequired || requireDataTypeAndFieldExisted || requireDataTypeAndFieldNotExisted;
+    }
 }

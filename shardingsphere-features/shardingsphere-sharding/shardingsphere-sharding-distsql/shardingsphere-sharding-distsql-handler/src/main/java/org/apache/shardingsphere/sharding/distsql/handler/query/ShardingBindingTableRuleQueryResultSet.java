@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.sharding.distsql.handler.query;
 
-import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.distsql.parser.statement.ShowShardingBindingTableRulesStatement;
@@ -29,17 +29,17 @@ import java.util.Iterator;
 import java.util.Optional;
 
 /**
- * Result set for show sharding binding table rules.
+ * Query result set for show sharding binding table rules.
  */
 public final class ShardingBindingTableRuleQueryResultSet implements DistSQLResultSet {
     
     private Iterator<String> data;
     
     @Override
-    public void init(final ShardingSphereMetaData metaData, final SQLStatement sqlStatement) {
-        Optional<ShardingRuleConfiguration> shardingRuleConfig = metaData.getRuleMetaData().getConfigurations()
+    public void init(final ShardingSphereDatabase database, final SQLStatement sqlStatement) {
+        Optional<ShardingRuleConfiguration> shardingRuleConfig = database.getRuleMetaData().getConfigurations()
                 .stream().filter(each -> each instanceof ShardingRuleConfiguration).map(each -> (ShardingRuleConfiguration) each).findFirst();
-        data = shardingRuleConfig.map(shardingRuleConfiguration -> shardingRuleConfiguration.getBindingTableGroups().iterator()).orElse(Collections.emptyIterator());
+        data = shardingRuleConfig.map(each -> each.getBindingTableGroups().iterator()).orElseGet(Collections::emptyIterator);
     }
     
     @Override
@@ -59,6 +59,6 @@ public final class ShardingBindingTableRuleQueryResultSet implements DistSQLResu
     
     @Override
     public String getType() {
-        return ShowShardingBindingTableRulesStatement.class.getCanonicalName();
+        return ShowShardingBindingTableRulesStatement.class.getName();
     }
 }

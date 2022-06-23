@@ -17,7 +17,6 @@
 
 package org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -30,15 +29,16 @@ import org.apache.shardingsphere.infra.route.context.RouteUnit;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
 
 import java.util.Collection;
-import java.util.LinkedList;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Substitutable column name token.
  */
 @EqualsAndHashCode(callSuper = false)
 public final class SubstitutableColumnNameToken extends SQLToken implements Substitutable, RouteUnitAware {
+    
+    private static final String COLUMN_NAME_SPLITTER = ", ";
     
     @Getter
     private final int stopIndex;
@@ -76,16 +76,25 @@ public final class SubstitutableColumnNameToken extends SQLToken implements Subs
     @Override
     public String toString(final RouteUnit routeUnit) {
         Map<String, String> logicAndActualTables = getLogicAndActualTables(routeUnit);
-        Collection<String> columnNames = new LinkedList<>();
+        StringBuilder result = new StringBuilder();
+        int count = 0;
         for (ColumnProjection each : projections) {
-            columnNames.add(getColumnName(each, logicAndActualTables));
+            if (0 == count && !lastColumn) {
+                result.append(getColumnName(each, logicAndActualTables));
+            } else {
+                result.append(COLUMN_NAME_SPLITTER).append(getColumnName(each, logicAndActualTables));
+            }
+            count++;
         }
-        String allColumnNames = Joiner.on(", ").join(columnNames);
-        return lastColumn ? ", " + allColumnNames : allColumnNames;
+        return result.toString();
     }
     
     private Map<String, String> getLogicAndActualTables(final RouteUnit routeUnit) {
-        return routeUnit.getTableMappers().stream().collect(Collectors.toMap(RouteMapper::getLogicName, RouteMapper::getActualName, (oldValue, currentValue) -> oldValue));
+        Map<String, String> result = new LinkedHashMap<>();
+        for (RouteMapper each : routeUnit.getTableMappers()) {
+            result.put(each.getLogicName(), each.getActualName());
+        }
+        return result;
     }
     
     private String getColumnName(final ColumnProjection columnProjection, final Map<String, String> logicActualTableNames) {

@@ -20,8 +20,10 @@ package org.apache.shardingsphere.proxy.frontend.postgresql;
 import lombok.Getter;
 import org.apache.shardingsphere.db.protocol.codec.DatabasePacketCodecEngine;
 import org.apache.shardingsphere.db.protocol.postgresql.codec.PostgreSQLPacketCodecEngine;
+import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLServerInfo;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.PostgreSQLPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.extended.PostgreSQLPreparedStatementRegistry;
+import org.apache.shardingsphere.proxy.backend.exception.InTransactionException;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.frontend.authentication.AuthenticationEngine;
 import org.apache.shardingsphere.proxy.frontend.command.CommandExecuteEngine;
@@ -37,7 +39,7 @@ import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngi
 @Getter
 public final class PostgreSQLFrontendEngine implements DatabaseProtocolFrontendEngine {
     
-    private final FrontendContext frontendContext = new FrontendContext(true, false);
+    private final FrontendContext frontendContext = new FrontendContext(true);
     
     private final AuthenticationEngine authenticationEngine = new PostgreSQLAuthenticationEngine();
     
@@ -46,13 +48,25 @@ public final class PostgreSQLFrontendEngine implements DatabaseProtocolFrontendE
     private final DatabasePacketCodecEngine<PostgreSQLPacket> codecEngine = new PostgreSQLPacketCodecEngine();
     
     @Override
+    public void setDatabaseVersion(final String databaseName, final String databaseVersion) {
+        PostgreSQLServerInfo.setServerVersion(databaseVersion);
+    }
+    
+    @Override
     public void release(final ConnectionSession connectionSession) {
         PostgreSQLPreparedStatementRegistry.getInstance().unregister(connectionSession.getConnectionId());
         PostgreSQLConnectionContextRegistry.getInstance().remove(connectionSession.getConnectionId());
     }
     
     @Override
-    public String getDatabaseType() {
+    public void handleException(final ConnectionSession connectionSession, final Exception exception) {
+        if (connectionSession.getTransactionStatus().isInTransaction() && !connectionSession.getTransactionStatus().isRollbackOnly() && !(exception instanceof InTransactionException)) {
+            connectionSession.getTransactionStatus().setRollbackOnly(true);
+        }
+    }
+    
+    @Override
+    public String getType() {
         return "PostgreSQL";
     }
 }

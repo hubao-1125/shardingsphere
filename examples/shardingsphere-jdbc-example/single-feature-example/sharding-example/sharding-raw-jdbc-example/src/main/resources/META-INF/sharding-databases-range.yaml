@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-schemaName: sharding-databases-range
+databaseName: sharding-databases-range
 
 mode:
   type: Memory
@@ -58,6 +58,7 @@ rules:
     - t_address
   defaultDatabaseStrategy:
     standard:
+      shardingColumn: user_id
       shardingAlgorithmName: standard-test-db
   defaultTableStrategy:
     none:
@@ -70,8 +71,6 @@ rules:
   keyGenerators:
     snowflake:
       type: SNOWFLAKE
-      props:
-          worker-id: 123
 
 props:
   sql-show: false

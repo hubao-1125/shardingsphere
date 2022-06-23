@@ -12,6 +12,7 @@ weight = 1
 
 全面支持 DML、DDL、DCL、TCL 和常用 DAL。
 支持分页、去重、排序、分组、聚合、表关联等复杂查询。
+支持 PostgreSQL 和 openGauss 数据库 SCHEMA DDL 和 DML 语句。 
 
 #### 常规查询
 
@@ -61,7 +62,7 @@ SELECT * FROM (SELECT row_.*, rownum rownum_ FROM (SELECT * FROM t_order) row_ W
 
 #### 运算表达式中包含分片键
 
-当分片键处于运算表达式中时，无法通过 SQL `字面`提取用于分片的值，将导致全路由。
+当分片键处于运算表达式中时，无法通过 SQL `字面` 提取用于分片的值，将导致全路由。
 
 例如，假设 `create_time` 为分片键：
 

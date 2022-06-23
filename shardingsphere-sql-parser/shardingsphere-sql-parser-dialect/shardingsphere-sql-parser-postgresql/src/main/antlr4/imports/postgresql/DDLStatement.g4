@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-grammar DDLStatement;
+parser grammar DDLStatement;
 
-import Symbol, Keyword, PostgreSQLKeyword, Literals, BaseRule, DMLStatement;
+import DMLStatement;
+
+options {tokenVocab = ModeLexer;}
 
 createTable
     : CREATE createTableSpecification TABLE notExistClause? tableName
@@ -128,6 +130,10 @@ dropDatabase
     : DROP DATABASE existClause? name
     ;
 
+dropGroup
+    : DROP GROUP existClause? name (COMMA_ name)*
+    ;
+
 createDatabaseSpecification
     :  createdbOptName EQ_? (signedIconst | booleanOrString | DEFAULT)
     ;
@@ -149,7 +155,7 @@ alterTable
     ;
 
 alterIndex
-    : ALTER INDEX (existClause? | ALL IN TABLESPACE) indexName alterIndexDefinitionClause
+    : ALTER INDEX (existClause? | ALL IN TABLESPACE) qualifiedName alterIndexDefinitionClause
     ;
 
 dropTable
@@ -161,7 +167,7 @@ dropTableOpt
     ;
 
 dropIndex
-    : DROP INDEX concurrentlyClause existClause? indexNames dropIndexOpt?
+    : DROP INDEX concurrentlyClause existClause? qualifiedNameList dropIndexOpt?
     ;
 
 dropIndexOpt
@@ -515,6 +521,7 @@ alterTableCmd
     | ALTER COLUMN? colId SET reloptions
     | ALTER COLUMN? colId RESET reloptions
     | ALTER COLUMN? colId SET STORAGE colId
+    | ALTER COLUMN? colId SET columnCompression
     | ALTER COLUMN? colId ADD GENERATED generatedWhen AS IDENTITY parenthesizedSeqOptList?
     | ALTER COLUMN? colId alterIdentityColumnOptionList
     | ALTER COLUMN? colId DROP IDENTITY
@@ -523,7 +530,7 @@ alterTableCmd
     | DROP COLUMN? colId dropBehavior?
     | ALTER COLUMN? colId setData? TYPE typeName collateClause? alterUsing?
     | ALTER COLUMN? colId alterGenericOptions
-    | ADD tableConstraint
+    | ADD tableConstraint (NOT VALID)?
     | ALTER CONSTRAINT name constraintAttributeSpec
     | VALIDATE CONSTRAINT name
     | DROP CONSTRAINT existClause name dropBehavior?
@@ -559,6 +566,11 @@ alterTableCmd
     | FORCE ROW LEVEL SECURITY
     | NO FORCE ROW LEVEL SECURITY
     | alterGenericOptions
+    ;
+
+columnCompression
+    : COMPRESSION colId
+    | COMPRESSION DEFAULT
     ;
 
 constraintAttributeSpec
@@ -659,7 +671,7 @@ opclassPurpose
     ;
 
 alterOperatorClauses
-    : operatorWithArgtypes SET SCHEMA name
+    : operatorWithArgtypes SET SCHEMA schemaName
     | operatorWithArgtypes SET LP_ operatorDefList RP_
     | operatorWithArgtypes OWNER TO roleSpec
     ;
@@ -669,7 +681,7 @@ operatorDefList
     ;
 
 operatorDefElem
-    : colLabel EQ_ (NONE | operatorDefArg)
+    : (RESTRICT | JOIN) EQ_ (NONE | operatorDefArg)
     ;
 
 operatorDefArg
@@ -803,7 +815,7 @@ alterDomain
 
 alterDomainClause
     : anyName (SET | DROP) NOT NULL
-    | anyName ADD tableConstraint
+    | anyName ADD tableConstraint (NOT VALID)?
     | anyName DROP CONSTRAINT existClause? name dropBehavior?
     | anyName VALIDATE CONSTRAINT name
     | anyName RENAME CONSTRAINT constraintName TO constraintName
@@ -932,7 +944,7 @@ alterGroupClauses
     ;
 
 alterLanguage
-    : ALTER PROCEDURAL? LANGUAGE (colId RENAME TO colId | OWNER TO (ignoredIdentifier | CURRENT_USER | SESSION_USER))
+    : ALTER PROCEDURAL? LANGUAGE colId (RENAME TO colId | OWNER TO (ignoredIdentifier | CURRENT_USER | SESSION_USER))
     ;
 
 alterLargeObject
@@ -952,21 +964,6 @@ alterMaterializedViewClauses
     | ALL IN TABLESPACE name (OWNED BY roleList) SET TABLESPACE name NOWAIT?
     ;
 
-declare
-    : DECLARE name cursorOptions CURSOR (WITH HOLD | WITHOUT HOLD)? FOR select
-    ;
-
-cursorOptions
-    : cursorOption*
-    ;
-
-cursorOption
-    : NO SCROLL
-    | SCROLL
-    | BINARY
-    | INSENSITIVE
-    ;
-
 executeStmt
     : EXECUTE name executeParamClause
     ;
@@ -984,7 +981,7 @@ refreshMatViewStmt
     ;
 
 alterPolicy
-    : ALTER POLICY existClause? name ON qualifiedName alterPolicyClauses
+    : ALTER POLICY name ON tableName alterPolicyClauses
     ;
 
 alterPolicyClauses
@@ -1022,10 +1019,10 @@ alterFunctionClauses
 
 alterPublication
     : ALTER PUBLICATION name
-    (RENAME TO name
+    ( RENAME TO name
     | OWNER TO roleSpec
     | SET definition
-    | (ADD | SET | DROP)  TABLE relationExprList)
+    | (ADD | SET | DROP) TABLE relationExprList)
     ;
 
 alterRoutine
@@ -1171,10 +1168,10 @@ alterView
     ;
 
 alterViewClauses
-    : alterTableCmds
-    | RENAME TO name
-    | RENAME COLUMN? name TO name
-    | SET SCHEMA name
+    : alterTableCmds #alterViewCmds
+    | RENAME TO name #alterRenameView
+    | RENAME COLUMN? name TO name #alterRenameColumn
+    | SET SCHEMA name #alterSetSchema
     ;
 
 close
@@ -1182,11 +1179,23 @@ close
     ;
 
 cluster
-    : CLUSTER VERBOSE? (qualifiedName clusterIndexSpecification? | name ON qualifiedName)?
+    : CLUSTER clusterVerboseSpecification? tableName? clusterIndexSpecification?
+    ;
+
+clusterVerboseSpecification
+    : VERBOSE | clusterVerboseOptionList
     ;
 
 clusterIndexSpecification
-    : USING name
+    : USING indexName
+    ;
+
+clusterVerboseOptionList
+    : LP_ clusterVerboseOption (COMMA_ clusterVerboseOption)* RP_
+    ;
+
+clusterVerboseOption
+    : VERBOSE booleanValue?
     ;
 
 comment
@@ -1202,9 +1211,8 @@ commentClauses
     | AGGREGATE aggregateWithArgtypes IS commentText
     | FUNCTION functionWithArgtypes IS commentText
     | OPERATOR operatorWithArgtypes IS commentText
-    | CONSTRAINT name ON anyName IS commentText
     | CONSTRAINT name ON DOMAIN anyName IS commentText
-    | objectTypeNameOnAnyName name ON anyName IS commentText
+    | objectTypeNameOnAnyName name ON tableName IS commentText
     | PROCEDURE functionWithArgtypes IS commentText
     | ROUTINE functionWithArgtypes IS commentText
     | TRANSFORM FOR typeName LANGUAGE name IS commentText
@@ -1215,7 +1223,7 @@ commentClauses
     ;
 
 objectTypeNameOnAnyName
-    : POLICY | RULE	| TRIGGER
+    : POLICY | RULE	| TRIGGER | CONSTRAINT
     ;
 
 objectTypeName
@@ -1632,7 +1640,7 @@ dropDomain
     ;
 
 dropEventTrigger
-    : DROP EVENT TRIGGER existClause? name dropBehavior?
+    : DROP EVENT TRIGGER existClause? nameList dropBehavior?
     ;
 
 dropExtension
@@ -1712,7 +1720,7 @@ dropServer
     ;
 
 dropStatistics
-    : DROP STATISTICS existClause? qualifiedNameList
+    : DROP STATISTICS existClause? qualifiedNameList dropBehavior?
     ;
 
 dropSubscription
@@ -1724,7 +1732,7 @@ dropTablespace
     ;
 
 dropTextSearch
-    : DROP TEXT SEARCH (CONFIGURATION | DICTIONARY | PARSER | TEMPLATE) existClause? name dropBehavior?
+    : DROP TEXT SEARCH (CONFIGURATION | DICTIONARY | PARSER | TEMPLATE) existClause? qualifiedName dropBehavior?
     ;
 
 dropTransform
@@ -1744,7 +1752,7 @@ dropUserMapping
     ;
 
 dropView
-    : DROP VIEW existClause? nameList dropBehavior?
+    : DROP VIEW existClause? qualifiedNameList dropBehavior?
     ;
 
 importForeignSchema
@@ -1763,8 +1771,44 @@ listen
     : LISTEN colId
     ;
 
+declare
+    : DECLARE cursorName cursorOptions CURSOR (WITH HOLD | WITHOUT HOLD)? FOR select
+    ;
+
+cursorOptions
+    : cursorOption*
+    ;
+
+cursorOption
+    : NO SCROLL
+    | SCROLL
+    | BINARY
+    | INSENSITIVE
+    ;
+
 move
-    : MOVE fetchArgs
+    : MOVE direction? (FROM | IN)? cursorName
+    ;
+
+fetch
+    : FETCH direction? (FROM | IN)? cursorName
+    ;
+
+direction
+    : NEXT #next
+    | PRIOR #prior
+    | FIRST #first
+    | LAST #last
+    | ABSOLUTE signedIconst #absoluteCount
+    | RELATIVE signedIconst #relativeCount
+    | signedIconst #count
+    | ALL #all
+    | FORWARD #forward
+    | FORWARD signedIconst #forwardCount
+    | FORWARD ALL #forwardAll
+    | BACKWARD #backward
+    | BACKWARD signedIconst #backwardCount
+    | BACKWARD ALL #backwardAll
     ;
 
 prepare
@@ -1852,4 +1896,96 @@ securityLabelClausces
 
 unlisten
     : UNLISTEN (colId | ASTERISK_)
+    ;
+
+createSchema
+    : CREATE SCHEMA notExistClause? createSchemaClauses
+    ;
+
+createSchemaClauses
+    : colId? AUTHORIZATION roleSpec schemaEltList
+    | colId schemaEltList
+    ;
+
+schemaEltList
+    : schemaStmt*
+    ;
+
+schemaStmt
+    : createTable | createIndex | createSequence | createTrigger | grant | createView
+    ;
+
+grant
+    : GRANT (privilegeClause | roleClause)
+    ;
+    
+privilegeClause
+    : privilegeTypes ON onObjectClause (FROM | TO) granteeList (WITH GRANT OPTION)?
+    ;
+    
+roleClause
+    : privilegeList (FROM | TO) roleList (WITH ADMIN OPTION)? (GRANTED BY roleSpec)?
+    ;
+
+privilegeTypes
+    : privilegeType columnNames? (COMMA_ privilegeType columnNames?)*
+    ;
+    
+onObjectClause
+    : DATABASE nameList
+    | SCHEMA nameList
+    | DOMAIN anyNameList
+    | FUNCTION functionWithArgtypesList
+    | PROCEDURE functionWithArgtypesList
+    | ROUTINE functionWithArgtypesList
+    | LANGUAGE nameList
+    | LARGE OBJECT numericOnlyList
+    | TABLESPACE nameList
+    | TYPE anyNameList
+    | SEQUENCE qualifiedNameList
+    | TABLE? privilegeLevel
+    | FOREIGN DATA WRAPPER nameList
+    | FOREIGN SERVER nameList
+    | ALL TABLES IN SCHEMA nameList
+    | ALL SEQUENCES IN SCHEMA nameList
+    | ALL FUNCTIONS IN SCHEMA nameList
+    | ALL PROCEDURES IN SCHEMA nameList
+    | ALL ROUTINES IN SCHEMA nameList
+    ;
+    
+numericOnlyList
+    : numericOnly (COMMA_ numericOnly)*
+    ;
+    
+privilegeLevel
+    : ASTERISK_ | ASTERISK_ DOT_ASTERISK_ | identifier DOT_ASTERISK_ | tableNames | schemaName DOT_ routineName
+    ;
+
+routineName
+    : identifier
+    ;
+
+privilegeType
+    : SELECT
+    | INSERT
+    | UPDATE
+    | DELETE
+    | TRUNCATE
+    | REFERENCES
+    | TRIGGER
+    | CREATE
+    | CONNECT
+    | TEMPORARY
+    | TEMP
+    | EXECUTE
+    | USAGE
+    | ALL PRIVILEGES?
+    ;
+
+alterSchema
+    : ALTER SCHEMA name (RENAME TO name | OWNER TO roleSpec)
+    ;
+
+dropSchema
+    : DROP SCHEMA existClause? nameList dropBehavior?
     ;

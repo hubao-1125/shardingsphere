@@ -1,7 +1,7 @@
 +++
-pre = "<b>4.10. </b>"
+pre = "<b>4.11. </b>"
 title = "可观察性"
-weight = 10
+weight = 11
 chapter = true
 +++
 
@@ -26,8 +26,8 @@ Tracing 用于获取 SQL 解析与 SQL 执行的链路跟踪信息。Apache Shar
 
 - 使用 OpenTelemetry
 
-OpenTelemetry 在2019年由 OpenTracing 和 OpenCencus 合并而来。
-使用这种方式，只需要在agent配置文件中，根据 [OpenTelemetry SDK自动配置说明](https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions/autoconfigure) ，填写合适的配置即可。
+OpenTelemetry 在 2019 年由 OpenTracing 和 OpenCencus 合并而来。
+使用这种方式，只需要在 agent 配置文件中，根据 [OpenTelemetry SDK 自动配置说明](https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions/autoconfigure) ，填写合适的配置即可。
 
 - 使用 SkyWalking
   
@@ -35,9 +35,11 @@ OpenTelemetry 在2019年由 OpenTracing 和 OpenCencus 合并而来。
 
 - 使用 SkyWalking 的内置自动探针
 
-[Apache ShardingSphere](https://shardingsphere.apache.org) 团队与[Apache SkyWalking](https://skywalking.apache.org) 团队共同合作，在 SkyWalking 中实现了 Apache ShardingSphere 自动探针，可以将相关的应用性能数据自动发送到 SkyWalking 中。注意这种方式的自动探针不能与 Apache ShardingSphere 插件探针同时使用。
+[Apache ShardingSphere](https://shardingsphere.apache.org) 团队与 [Apache SkyWalking](https://skywalking.apache.org) 团队共同合作，在 SkyWalking 中实现了 Apache ShardingSphere 自动探针，可以将相关的应用性能数据自动发送到 SkyWalking 中。注意这种方式的自动探针不能与 Apache ShardingSphere 插件探针同时使用。
 
 Metrics 则用于收集和展示整个集群的统计指标。Apache ShardingSphere 默认提供了对 Prometheus 的支持。
+
+![概述](https://shardingsphere.apache.org/document/current/img/apm/overview_v3.png)
 
 ## 挑战
 
@@ -47,3 +49,5 @@ Tracing 和 Metrics 需要通过埋点来收集系统信息。
 ## 目标
 
 **提供尽量多的性能和统计指标，并隔离核心代码和埋点代码，是 Apache ShardingSphere 可观察性模块的设计目标。**
+
+**源码：https://github.com/apache/shardingsphere/tree/master/shardingsphere-agent**

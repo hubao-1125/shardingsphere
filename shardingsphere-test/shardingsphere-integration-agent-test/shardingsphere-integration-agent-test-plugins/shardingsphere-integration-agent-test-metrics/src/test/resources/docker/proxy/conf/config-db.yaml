@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-schemaName: agent-metrics-db
+databaseName: agent-metrics-db
 
 dataSources:
   ds_0:
@@ -68,5 +68,3 @@ rules:
     keyGenerators:
       snowflake:
         type: SNOWFLAKE
-        props:
-          worker-id: 123

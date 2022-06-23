@@ -17,13 +17,14 @@
 
 package org.apache.shardingsphere.mode.manager.cluster.coordinator.fixture;
 
+import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEventListener;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 public final class ClusterPersistRepositoryFixture implements ClusterPersistRepository {
     
@@ -50,6 +51,11 @@ public final class ClusterPersistRepositoryFixture implements ClusterPersistRepo
     }
     
     @Override
+    public String getSequentialId(final String key, final String value) {
+        return null;
+    }
+    
+    @Override
     public void delete(final String key) {
     }
     
@@ -58,12 +64,17 @@ public final class ClusterPersistRepositoryFixture implements ClusterPersistRepo
     }
     
     @Override
-    public boolean tryLock(final String key, final long time, final TimeUnit unit) {
-        return false;
+    public void watchSessionConnection(final InstanceContext instanceContext) {
     }
     
     @Override
-    public void releaseLock(final String key) {
+    public Lock getInternalMutexLock(final String lockName) {
+        return null;
+    }
+    
+    @Override
+    public Lock getInternalReentrantMutexLock(final String lockName) {
+        return null;
     }
     
     @Override
@@ -72,6 +83,6 @@ public final class ClusterPersistRepositoryFixture implements ClusterPersistRepo
     
     @Override
     public String getType() {
-        return "TEST";
+        return "FIXTURE";
     }
 }

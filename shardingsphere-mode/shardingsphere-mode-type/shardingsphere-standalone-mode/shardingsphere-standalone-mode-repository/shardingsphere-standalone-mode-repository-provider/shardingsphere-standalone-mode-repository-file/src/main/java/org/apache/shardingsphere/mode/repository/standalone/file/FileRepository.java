@@ -17,7 +17,6 @@
 
 package org.apache.shardingsphere.mode.repository.standalone.file;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.mode.repository.standalone.StandalonePersistRepository;
@@ -28,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -45,10 +45,10 @@ public final class FileRepository implements StandalonePersistRepository {
     private String path;
     
     @Override
-    public void setProps(final Properties props) {
-        FileRepositoryProperties localRepositoryProperties = new FileRepositoryProperties(props);
+    public void init(final Properties props) {
+        FileRepositoryProperties localRepositoryProps = new FileRepositoryProperties(props);
         path = Optional.ofNullable(
-                Strings.emptyToNull(localRepositoryProperties.getValue(FileRepositoryPropertyKey.PATH))).orElse(Joiner.on("/").join(System.getProperty("user.home"), DEFAULT_PERSIST_DIRECTORY));
+                Strings.emptyToNull(localRepositoryProps.getValue(FileRepositoryPropertyKey.PATH))).orElseGet(() -> String.join("/", System.getProperty("user.home"), DEFAULT_PERSIST_DIRECTORY));
     }
     
     @Override
@@ -57,7 +57,10 @@ public final class FileRepository implements StandalonePersistRepository {
             return "";
         }
         try {
-            return Files.readAllLines(Paths.get(path, key)).stream().map(each -> each + System.lineSeparator()).collect(Collectors.joining());
+            Collection<String> lines = Files.readAllLines(Paths.get(path, key));
+            if (!lines.isEmpty()) {
+                return lines.size() == 1 ? lines.iterator().next() : lines.stream().map(each -> each + System.lineSeparator()).collect(Collectors.joining());
+            }
         } catch (final IOException ex) {
             log.error("Get file data by key: {} failed", key, ex);
         }
@@ -67,13 +70,21 @@ public final class FileRepository implements StandalonePersistRepository {
     @Override
     public List<String> getChildrenKeys(final String key) {
         File file = new File(path, key);
-        return file.exists() ? Arrays.stream(file.listFiles()).map(File::getName).collect(Collectors.toList())
-                : Collections.emptyList();
+        if (!file.exists()) {
+            return Collections.emptyList();
+        }
+        File[] files = file.listFiles();
+        return null == files ? Collections.emptyList() : Arrays.stream(files).map(File::getName).collect(Collectors.toList());
     }
     
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public void persist(final String key, final String value) {
         File file = new File(path, key);
+        if (Strings.isNullOrEmpty(value)) {
+            file.mkdirs();
+            return;
+        }
         if (!file.exists()) {
             file.getParentFile().mkdirs();
         }
@@ -95,11 +106,16 @@ public final class FileRepository implements StandalonePersistRepository {
     }
     
     @Override
-    public String getType() {
-        return "File";
+    public void close() {
     }
     
     @Override
-    public void close() {
+    public boolean isDefault() {
+        return true;
+    }
+    
+    @Override
+    public String getType() {
+        return "File";
     }
 }

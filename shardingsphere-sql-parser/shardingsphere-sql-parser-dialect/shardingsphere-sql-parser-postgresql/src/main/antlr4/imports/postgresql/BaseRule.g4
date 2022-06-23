@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
-grammar BaseRule;
+parser grammar BaseRule;
 
-import Keyword, PostgreSQLKeyword, Symbol, Literals;
+options {
+    tokenVocab = ModeLexer;
+}
 
 parameterMarker
     : QUESTION_ literalsType?
+    | DOLLAR_ numberLiterals
     ;
 
 reservedKeyword
@@ -204,6 +207,7 @@ unreservedWord
     | EXECUTE
     | EXPLAIN
     | EXPRESSION
+    | EXTENDED
     | EXTENSION
     | EXTERNAL
     | FAMILY
@@ -241,6 +245,7 @@ unreservedWord
     | INSERT
     | INSTEAD
     | INVOKER
+    | INTERVAL
     | ISOLATION
     | KEY
     | LABEL
@@ -256,6 +261,7 @@ unreservedWord
     | LOCK
     | LOCKED
     | LOGGED
+    | MAIN
     | MAPPING
     | MATCH
     | MATERIALIZED
@@ -266,6 +272,7 @@ unreservedWord
     | MODE
     | MONTH
     | MOVE
+    | MOD
     | NAME
     | NAMES
     | NEW
@@ -300,6 +307,7 @@ unreservedWord
     | PARTITION
     | PASSING
     | PASSWORD
+    | PLAIN
     | PLANS
     | POLICY
     | PRECEDING
@@ -390,6 +398,8 @@ unreservedWord
     | TRUSTED
     | TYPE
     | TYPES
+    | TIME
+    | TIMESTAMP
     | UESCAPE
     | UNBOUNDED
     | UNCOMMITTED
@@ -451,7 +461,7 @@ typeFuncNameKeyword
     ;
 
 schemaName
-    : identifier
+    : (owner DOT_)? identifier
     ;
 
 tableName
@@ -869,6 +879,7 @@ funcName
 aexprConst
     : NUMBER_
     | STRING_
+    | BEGIN_DOLLAR_STRING_CONSTANT DOLLAR_TEXT* END_DOLLAR_STRING_CONSTANT
     | funcName STRING_
     | funcName LP_ funcArgList sortClause? RP_ STRING_
     | TRUE
@@ -1373,6 +1384,7 @@ defArg
     | NUMBER_
     | STRING_
     | NONE
+    | funcName (LP_ funcArgsList RP_ | LP_ RP_)
     ;
 
 funcType
@@ -1382,7 +1394,7 @@ funcType
     ;
 
 selectWithParens
-    : 'Default does not match anything'
+    : DEFAULT_DOES_NOT_MATCH_ANYTHING
     ;
 
 dataType
@@ -1495,6 +1507,8 @@ roleSpec
     | nonReservedWord
     | CURRENT_USER
     | SESSION_USER
+    | CURRENT_ROLE
+    | PUBLIC
     ;
 
 varName
@@ -1692,10 +1706,7 @@ replicaIdentity
     ;
 
 operArgtypes
-    : LP_ typeName RP_
-    | LP_ typeName COMMA_ typeName RP_
-    | LP_ NONE COMMA_ typeName RP_
-    | LP_ typeName COMMA_ NONE RP_
+    : LP_ (typeName | NONE) COMMA_ typeName RP_
     ;
 
 funcArg
@@ -1798,10 +1809,8 @@ relationExprList
     ;
 
 relationExpr
-    : qualifiedName
-    | qualifiedName ASTERISK_
-    | ONLY qualifiedName
-    | ONLY LP_ qualifiedName RP_
+    : qualifiedName (ASTERISK_)?
+    | ONLY LP_? qualifiedName RP_?
     ;
 
 commonFuncOptItem
@@ -1847,4 +1856,8 @@ notExistClause
     
 existClause
     : IF EXISTS
+    ;
+
+booleanValue
+    : TRUE | ON | FALSE | OFF | NUMBER_
     ;

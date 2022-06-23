@@ -17,7 +17,7 @@
 
 grammar DMLStatement;
 
-import Symbol, Keyword, MySQLKeyword, Literals, BaseRule;
+import BaseRule;
 
 insert
     : INSERT insertSpecification INTO? tableName partitionNames? (insertValuesClause | setAssignmentsClause | insertSelectClause) onDuplicateKeyClause?
@@ -138,12 +138,12 @@ queryExpression
 
 queryExpressionBody
     : queryPrimary
-    | queryExpressionParens unionClause
-    | queryExpressionBody unionClause
+    | queryExpressionParens combineClause
+    | queryExpressionBody combineClause
     ;
 
-unionClause
-    : UNION unionOption? (queryPrimary | queryExpressionParens)
+combineClause
+    : UNION combineOption? (queryPrimary | queryExpressionParens)
     ;
 
 queryExpressionParens
@@ -153,7 +153,7 @@ queryExpressionParens
 queryPrimary
     : querySpecification
     | tableValueConstructor
-    | explicitTable
+    | tableStatement
     ;
 
 querySpecification
@@ -225,7 +225,7 @@ loadXmlStatement
       (setAssignmentsClause)?
     ;
 
-explicitTable
+tableStatement
     : TABLE tableName
     ;
 
@@ -266,7 +266,7 @@ unqualifiedShorthand
     ;
 
 qualifiedShorthand
-    : identifier DOT_ASTERISK_
+    : (identifier DOT_)? identifier DOT_ASTERISK_
     ;
 
 fromClause

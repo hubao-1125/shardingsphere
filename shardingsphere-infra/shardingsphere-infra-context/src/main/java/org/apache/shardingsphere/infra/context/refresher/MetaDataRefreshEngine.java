@@ -17,59 +17,63 @@
 
 package org.apache.shardingsphere.infra.context.refresher;
 
-import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.eventbus.ShardingSphereEventBus;
-import org.apache.shardingsphere.infra.federation.optimizer.metadata.FederationSchemaMetaData;
-import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
-import org.apache.shardingsphere.infra.metadata.mapper.SQLStatementEventMapper;
-import org.apache.shardingsphere.infra.metadata.mapper.SQLStatementEventMapperFactory;
-import org.apache.shardingsphere.infra.metadata.schema.event.SchemaAlteredEvent;
-import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.spi.typed.TypedSPIRegistry;
+import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
+import org.apache.shardingsphere.infra.federation.optimizer.context.planner.OptimizerPlannerContext;
+import org.apache.shardingsphere.infra.federation.optimizer.metadata.FederationDatabaseMetaData;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
+import org.apache.shardingsphere.infra.metadata.database.schema.event.MetaDataRefreshedEvent;
+import org.apache.shardingsphere.infra.route.context.RouteUnit;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Meta data refresh engine.
  */
+@RequiredArgsConstructor
 public final class MetaDataRefreshEngine {
     
-    static {
-        ShardingSphereServiceLoader.register(MetaDataRefresher.class);
-    }
+    private static final Collection<Class<? extends SQLStatement>> IGNORED_SQL_STATEMENT_CLASSES = Collections.newSetFromMap(new ConcurrentHashMap<>());
     
-    private final ShardingSphereMetaData schemaMetaData;
+    private final ShardingSphereDatabase database;
     
-    private final FederationSchemaMetaData federationMetaData;
+    private final FederationDatabaseMetaData federationMetaData;
+    
+    private final Map<String, OptimizerPlannerContext> optimizerPlanners;
     
     private final ConfigurationProperties props;
     
-    public MetaDataRefreshEngine(final ShardingSphereMetaData schemaMetaData, final FederationSchemaMetaData federationMetaData, final ConfigurationProperties props) {
-        this.schemaMetaData = schemaMetaData;
-        this.federationMetaData = federationMetaData;
-        this.props = props;
-    }
-    
     /**
-     * Refresh.
+     * Refresh meta data.
      *
-     * @param sqlStatement SQL statement
-     * @param logicDataSourceNames logic data source names
+     * @param sqlStatementContext SQL statement context
+     * @param routeUnits route units
      * @throws SQLException SQL exception
+     * @return meta data refreshed event
      */
-    public void refresh(final SQLStatement sqlStatement, final Collection<String> logicDataSourceNames) throws SQLException {
-        Optional<MetaDataRefresher> schemaRefresher = TypedSPIRegistry.findRegisteredService(MetaDataRefresher.class, sqlStatement.getClass().getSuperclass().getCanonicalName(), null);
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public Optional<MetaDataRefreshedEvent> refresh(final SQLStatementContext<?> sqlStatementContext, final Collection<RouteUnit> routeUnits) throws SQLException {
+        Class<? extends SQLStatement> sqlStatementClass = sqlStatementContext.getSqlStatement().getClass();
+        if (IGNORED_SQL_STATEMENT_CLASSES.contains(sqlStatementClass)) {
+            return Optional.empty();
+        }
+        Optional<MetaDataRefresher> schemaRefresher = MetaDataRefresherFactory.findInstance(sqlStatementClass);
         if (schemaRefresher.isPresent()) {
-            schemaRefresher.get().refresh(schemaMetaData, federationMetaData, logicDataSourceNames, sqlStatement, props);
-            ShardingSphereEventBus.getInstance().post(new SchemaAlteredEvent(schemaMetaData.getName(), schemaMetaData.getSchema()));
+            String schemaName = sqlStatementContext.getTablesContext().getSchemaName()
+                    .orElseGet(() -> DatabaseTypeEngine.getDefaultSchemaName(sqlStatementContext.getDatabaseType(), database.getName()));
+            Collection<String> logicDataSourceNames = routeUnits.stream().map(each -> each.getDataSourceMapper().getLogicName()).collect(Collectors.toList());
+            return schemaRefresher.get().refresh(database, federationMetaData, optimizerPlanners, logicDataSourceNames, schemaName, sqlStatementContext.getSqlStatement(), props);
         }
-        Optional<SQLStatementEventMapper> sqlStatementEventMapper = SQLStatementEventMapperFactory.newInstance(sqlStatement);
-        if (sqlStatementEventMapper.isPresent()) {
-            ShardingSphereEventBus.getInstance().post(sqlStatementEventMapper.get().map(sqlStatement));
-            // TODO Subscribe and handle DCLStatementEvent
-        }
+        IGNORED_SQL_STATEMENT_CLASSES.add(sqlStatementClass);
+        return Optional.empty();
     }
 }

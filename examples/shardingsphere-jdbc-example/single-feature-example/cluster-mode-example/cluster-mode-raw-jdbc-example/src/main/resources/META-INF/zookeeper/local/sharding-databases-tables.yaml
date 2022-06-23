@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-schemaName: sharding-databases-tables
+databaseName: sharding-databases-tables
 
 mode:
   type: Cluster
@@ -87,8 +87,6 @@ rules:
   keyGenerators:
     snowflake:
       type: SNOWFLAKE
-      props:
-          worker-id: 123
 
 props:
   sql-show: true

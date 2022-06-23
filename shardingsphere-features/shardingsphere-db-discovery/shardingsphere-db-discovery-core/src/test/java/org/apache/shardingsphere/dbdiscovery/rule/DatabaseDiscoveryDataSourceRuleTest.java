@@ -17,14 +17,14 @@
 
 package org.apache.shardingsphere.dbdiscovery.rule;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.shardingsphere.dbdiscovery.api.config.rule.DatabaseDiscoveryDataSourceRuleConfiguration;
-import org.apache.shardingsphere.dbdiscovery.mgr.MGRDatabaseDiscoveryType;
+import org.apache.shardingsphere.dbdiscovery.mysql.type.MGRMySQLDatabaseDiscoveryProviderAlgorithm;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -35,24 +35,24 @@ public final class DatabaseDiscoveryDataSourceRuleTest {
     
     private final DatabaseDiscoveryDataSourceRule databaseDiscoveryDataSourceRule = new DatabaseDiscoveryDataSourceRule(
             new DatabaseDiscoveryDataSourceRuleConfiguration("test_pr", Arrays.asList("ds_0", "ds_1"), "ha_heartbeat", "discoveryTypeName"), new Properties(),
-            new MGRDatabaseDiscoveryType());
+            new MGRMySQLDatabaseDiscoveryProviderAlgorithm());
     
     @Test(expected = IllegalArgumentException.class)
     public void assertNewHADataSourceRuleWithoutName() {
         new DatabaseDiscoveryDataSourceRule(new DatabaseDiscoveryDataSourceRuleConfiguration("", Arrays.asList("ds_0", "ds_1"), "ha_heartbeat", "discoveryTypeName"),
-                new Properties(), new MGRDatabaseDiscoveryType());
+                new Properties(), new MGRMySQLDatabaseDiscoveryProviderAlgorithm());
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void assertNewHADataSourceRuleWithNullDataSourceName() {
         new DatabaseDiscoveryDataSourceRule(new DatabaseDiscoveryDataSourceRuleConfiguration("ds", null, "ha_heartbeat", "discoveryTypeName"),
-                new Properties(), new MGRDatabaseDiscoveryType());
+                new Properties(), new MGRMySQLDatabaseDiscoveryProviderAlgorithm());
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void assertNewHADataSourceRuleWithEmptyDataSourceName() {
         new DatabaseDiscoveryDataSourceRule(new DatabaseDiscoveryDataSourceRuleConfiguration("ds", Collections.emptyList(), "ha_heartbeat", "discoveryTypeName"),
-                new Properties(), new MGRDatabaseDiscoveryType());
+                new Properties(), new MGRMySQLDatabaseDiscoveryProviderAlgorithm());
     }
     
     @Test
@@ -61,28 +61,14 @@ public final class DatabaseDiscoveryDataSourceRuleTest {
     }
     
     @Test
-    public void assertGetDataSourceNamesWithDisabledDataSourceNames() {
-        databaseDiscoveryDataSourceRule.disableDataSource("ds_0");
-        assertThat(databaseDiscoveryDataSourceRule.getDataSourceNames(), is(Collections.singletonList("ds_1")));
-    }
-    
-    @Test
-    public void assertUpdateDisabledDataSourceNamesForDisabled() {
-        databaseDiscoveryDataSourceRule.disableDataSource("ds_0");
-        assertThat(databaseDiscoveryDataSourceRule.getDataSourceNames(), is(Collections.singletonList("ds_1")));
-    }
-    
-    @Test
-    public void assertUpdateDisabledDataSourceNamesForEnabled() {
-        databaseDiscoveryDataSourceRule.disableDataSource("ds_0");
-        databaseDiscoveryDataSourceRule.enableDataSource("ds_0");
-        assertThat(databaseDiscoveryDataSourceRule.getDataSourceNames(), is(Arrays.asList("ds_0", "ds_1")));
-    }
-    
-    @Test
     public void assertGetDataSourceMapper() {
-        Map<String, Collection<String>> actual = databaseDiscoveryDataSourceRule.getDataSourceMapper();
-        Map<String, Collection<String>> expected = ImmutableMap.of("ds_0", Collections.singletonList("ds_0"), "ds_1", Collections.singletonList("ds_1"));
-        assertThat(actual, is(expected));
+        assertThat(databaseDiscoveryDataSourceRule.getDataSourceMapper(), is(getExpectedDataSourceMapper()));
+    }
+    
+    private Map<String, Collection<String>> getExpectedDataSourceMapper() {
+        Map<String, Collection<String>> result = new LinkedHashMap<>(2, 1);
+        result.put("ds_0", Collections.singletonList("ds_0"));
+        result.put("ds_1", Collections.singletonList("ds_1"));
+        return result;
     }
 }

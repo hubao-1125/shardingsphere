@@ -17,7 +17,7 @@
 
 grammar RDLStatement;
 
-import Keyword, Literals, Symbol;
+import BaseRule;
 
 createShardingTableRule
     : CREATE SHARDING TABLE RULE shardingTableRuleDefinition (COMMA shardingTableRuleDefinition)*
@@ -39,8 +39,16 @@ createDefaultShardingStrategy
     : CREATE DEFAULT SHARDING type=(DATABASE | TABLE) STRATEGY LP shardingStrategy RP
     ;
 
+alterDefaultShardingStrategy
+    : ALTER DEFAULT SHARDING type=(DATABASE | TABLE) STRATEGY LP shardingStrategy RP
+    ;
+
+dropDefaultShardingStrategy
+    : DROP DEFAULT SHARDING type=(DATABASE | TABLE) STRATEGY existsClause?
+    ;
+
 createShardingKeyGenerator
-    : CREATE SHARDING KEY GENERATOR keyGeneratorDefination (COMMA keyGeneratorDefination)*
+    : CREATE SHARDING KEY GENERATOR keyGeneratorDefinition (COMMA keyGeneratorDefinition)*
     ;
 
 alterShardingTableRule
@@ -60,23 +68,27 @@ alterShardingAlgorithm
     ;
 
 alterShardingKeyGenerator
-    : ALTER SHARDING KEY GENERATOR keyGeneratorDefination (COMMA keyGeneratorDefination)*
+    : ALTER SHARDING KEY GENERATOR keyGeneratorDefinition (COMMA keyGeneratorDefinition)*
     ;
 
 dropShardingTableRule
-    : DROP SHARDING TABLE RULE tableName (COMMA tableName)*
+    : DROP SHARDING TABLE RULE existsClause? tableName (COMMA tableName)* withUnusedAlgorithmsClause?
     ;
 
 dropShardingBindingTableRules
-    : DROP SHARDING BINDING TABLE RULES (bindTableRulesDefinition (COMMA bindTableRulesDefinition)*)?
+    : DROP SHARDING BINDING TABLE RULES existsClause? (bindTableRulesDefinition (COMMA bindTableRulesDefinition)*)?
     ;
 
 dropShardingBroadcastTableRules
-    : DROP SHARDING BROADCAST TABLE RULES (tableName (COMMA tableName)*)?
+    : DROP SHARDING BROADCAST TABLE RULES existsClause? (tableName (COMMA tableName)*)?
     ;
-    
+
 dropShardingAlgorithm
-    : DROP SHARDING ALGORITHM algorithmName (COMMA algorithmName)*
+    : DROP SHARDING ALGORITHM existsClause? algorithmName (COMMA algorithmName)*
+    ;
+
+dropShardingKeyGenerator
+    : DROP SHARDING KEY GENERATOR existsClause? keyGeneratorName (COMMA keyGeneratorName)*
     ;
 
 shardingTableRuleDefinition
@@ -84,14 +96,14 @@ shardingTableRuleDefinition
     ;
 
 shardingAutoTableRule
-    : tableName LP resources COMMA shardingColumn COMMA algorithmDefinition (COMMA keyGenerateStrategy)? RP
+    : tableName LP resources COMMA shardingColumnDefinition COMMA algorithmDefinition (COMMA keyGenerateDeclaration)? RP
     ;
 
 shardingTableRule
-    : tableName LP dataNodes (COMMA  databaseStrategy)? (COMMA tableStrategy)? (COMMA keyGenerateStrategy)? RP
+    : tableName LP dataNodes (COMMA  databaseStrategy)? (COMMA tableStrategy)? (COMMA keyGenerateDeclaration)? RP
     ;
 
-keyGeneratorDefination
+keyGeneratorDefinition
     : keyGeneratorName LP algorithmDefinition RP
     ;
 
@@ -115,16 +127,36 @@ dataNode
     : IDENTIFIER | STRING
     ;
 
+shardingColumnDefinition
+    : shardingColumn | shardingColumns
+    ;
+
 shardingColumn
     : SHARDING_COLUMN EQ columnName
     ;
 
+shardingColumns
+    : SHARDING_COLUMNS EQ columnName COMMA columnName (COMMA columnName)*
+    ;
+
 shardingAlgorithm
+    : existingAlgorithm | autoCreativeAlgorithm
+    ;
+
+existingAlgorithm
     : SHARDING_ALGORITHM EQ shardingAlgorithmName
     ;
 
+autoCreativeAlgorithm
+    : SHARDING_ALGORITHM LP algorithmDefinition RP
+    ;
+
+keyGenerator
+    : KEY_GENERATOR EQ shardingAlgorithmName
+    ;
+
 shardingStrategy
-    :  TYPE EQ strategyType COMMA shardingColumn COMMA shardingAlgorithm 
+    :  TYPE EQ strategyType COMMA shardingColumnDefinition COMMA shardingAlgorithm 
     ;
 
 databaseStrategy
@@ -135,16 +167,20 @@ tableStrategy
     : TABLE_STRATEGY LP shardingStrategy RP
     ;
 
+keyGenerateDeclaration
+    : keyGenerateDefinition | keyGenerateStrategy
+    ;
+
+keyGenerateDefinition
+    : KEY_GENERATE_STRATEGY LP COLUMN EQ columnName COMMA algorithmDefinition RP
+    ;
+
 keyGenerateStrategy
-    : GENERATED_KEY LP COLUMN EQ columnName COMMA algorithmDefinition RP
+    : KEY_GENERATE_STRATEGY LP COLUMN EQ columnName COMMA keyGenerator RP
     ;
 
 algorithmDefinition
     : TYPE LP NAME EQ algorithmName (COMMA PROPERTIES LP algorithmProperties? RP)? RP
-    ;
-
-tableName
-    : IDENTIFIER
     ;
 
 columnName
@@ -177,4 +213,12 @@ algorithmProperties
 
 algorithmProperty
     : key=(IDENTIFIER | STRING) EQ value=(NUMBER | INT | IDENTIFIER | STRING)
+    ;
+
+existClause
+    : IF EXISTS
+    ;
+
+withUnusedAlgorithmsClause
+    : WITH UNUSED ALGORITHMS
     ;

@@ -142,6 +142,10 @@ COLLATE
 COMMENTS
     : C O M M E N T S
     ;
+    
+COMPRESSION
+    : C O M P R E S S I O N
+    ;
 
 CONCURRENTLY
     : C O N C U R R E N T L Y
@@ -1383,4 +1387,20 @@ OUT
 
 INOUT
     : I N O U T
+    ;
+
+FORMAT
+    : F O R M A T
+    ;
+
+FORCE_QUOTE
+    : F O R C E UL_ Q U O T E
+    ;
+
+FORCE_NOT_NULL
+    : F O R C E UL_ N O T UL_ N U L L
+    ;
+
+FORCE_NULL
+    : F O R C E UL_ N U L L
     ;

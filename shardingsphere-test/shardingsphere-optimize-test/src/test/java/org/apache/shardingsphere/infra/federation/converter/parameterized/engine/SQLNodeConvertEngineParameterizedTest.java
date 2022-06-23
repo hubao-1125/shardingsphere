@@ -30,7 +30,7 @@ import org.apache.calcite.sql.parser.SqlParser.Config;
 import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.util.Litmus;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypeRegistry;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
 import org.apache.shardingsphere.infra.federation.optimizer.context.parser.dialect.OptimizerSQLDialectBuilderFactory;
 import org.apache.shardingsphere.infra.federation.optimizer.converter.SQLNodeConverterEngine;
 import org.apache.shardingsphere.sql.parser.api.CacheOption;
@@ -93,7 +93,10 @@ public final class SQLNodeConvertEngineParameterizedTest {
         SUPPORTED_SQL_CASE_IDS.add("select_constant_without_table");
         SUPPORTED_SQL_CASE_IDS.add("select_with_schema");
         SUPPORTED_SQL_CASE_IDS.add("select_with_union");
+        SUPPORTED_SQL_CASE_IDS.add("select_with_union_all");
         SUPPORTED_SQL_CASE_IDS.add("select_cast_function");
+        SUPPORTED_SQL_CASE_IDS.add("select_with_same_table_name_and_alias");
+        SUPPORTED_SQL_CASE_IDS.add("select_count_like_concat");
     }
     
     private final String sqlCaseId;
@@ -129,7 +132,7 @@ public final class SQLNodeConvertEngineParameterizedTest {
     @Test
     public void assertConvertToSQLNode() {
         String databaseType = "H2".equals(this.databaseType) ? "MySQL" : this.databaseType;
-        String sql = SQL_CASES_LOADER.getCaseValue(sqlCaseId, sqlCaseType, SQL_PARSER_TEST_CASES_REGISTRY.get(sqlCaseId).getParameters());
+        String sql = SQL_CASES_LOADER.getCaseValue(sqlCaseId, sqlCaseType, SQL_PARSER_TEST_CASES_REGISTRY.get(sqlCaseId).getParameters(), databaseType);
         SQLStatement sqlStatement = parseSQLStatement(databaseType, sql);
         SqlNode actual = SQLNodeConverterEngine.convertToSQLNode(sqlStatement);
         SqlNode expected = parseSqlNode(databaseType, sql);
@@ -140,15 +143,15 @@ public final class SQLNodeConvertEngineParameterizedTest {
     public void assertConvertToSQLStatement() {
         SQLParserTestCase expected = SQL_PARSER_TEST_CASES_REGISTRY.get(sqlCaseId);
         String databaseType = "H2".equals(this.databaseType) ? "MySQL" : this.databaseType;
-        String sql = SQL_CASES_LOADER.getCaseValue(sqlCaseId, sqlCaseType, SQL_PARSER_TEST_CASES_REGISTRY.get(sqlCaseId).getParameters());
+        String sql = SQL_CASES_LOADER.getCaseValue(sqlCaseId, sqlCaseType, SQL_PARSER_TEST_CASES_REGISTRY.get(sqlCaseId).getParameters(), databaseType);
         SqlNode sqlNode = parseSqlNode(databaseType, sql);
         SQLStatement actual = SQLNodeConverterEngine.convertToSQLStatement(sqlNode);
-        SQLStatementAssert.assertIs(new SQLCaseAssertContext(SQL_CASES_LOADER, sqlCaseId, sqlCaseType), actual, expected);
+        SQLStatementAssert.assertIs(new SQLCaseAssertContext(SQL_CASES_LOADER, sqlCaseId, sqlCaseType, databaseType), actual, expected);
     }
     
     @SneakyThrows(SqlParseException.class)
     private SqlNode parseSqlNode(final String databaseType, final String sql) {
-        return SqlParser.create(sql, createConfig(DatabaseTypeRegistry.getActualDatabaseType(databaseType))).parseQuery();
+        return SqlParser.create(sql, createConfig(DatabaseTypeFactory.getInstance(databaseType))).parseQuery();
     }
     
     private Config createConfig(final DatabaseType databaseType) {
@@ -160,12 +163,12 @@ public final class SQLNodeConvertEngineParameterizedTest {
     private Properties createSQLDialectProperties(final DatabaseType databaseType) {
         Properties result = new Properties();
         result.setProperty(CalciteConnectionProperty.TIME_ZONE.camelName(), "UTC");
-        result.putAll(OptimizerSQLDialectBuilderFactory.build(databaseType, result));
+        result.putAll(OptimizerSQLDialectBuilderFactory.build(databaseType));
         return result;
     }
     
     private SQLStatement parseSQLStatement(final String databaseType, final String sql) {
-        CacheOption cacheOption = new CacheOption(128, 1024L, 4);
-        return new SQLVisitorEngine(databaseType, "STATEMENT", new Properties()).visit(new SQLParserEngine(databaseType, cacheOption, true).parse(sql, false));
+        CacheOption cacheOption = new CacheOption(128, 1024L);
+        return new SQLVisitorEngine(databaseType, "STATEMENT", true, new Properties()).visit(new SQLParserEngine(databaseType, cacheOption).parse(sql, false));
     }
 }

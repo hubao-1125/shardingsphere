@@ -17,16 +17,16 @@
 
 package org.apache.shardingsphere.dbdiscovery.distsql.handler.query;
 
+import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import org.apache.shardingsphere.dbdiscovery.api.config.DatabaseDiscoveryRuleConfiguration;
 import org.apache.shardingsphere.dbdiscovery.api.config.rule.DatabaseDiscoveryDataSourceRuleConfiguration;
 import org.apache.shardingsphere.dbdiscovery.api.config.rule.DatabaseDiscoveryHeartBeatConfiguration;
-import org.apache.shardingsphere.dbdiscovery.constant.DatabaseDiscoveryRuleConstants;
 import org.apache.shardingsphere.dbdiscovery.distsql.parser.statement.ShowDatabaseDiscoveryRulesStatement;
+import org.apache.shardingsphere.dbdiscovery.rule.DatabaseDiscoveryRule;
 import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
 import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
-import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
-import org.apache.shardingsphere.infra.rule.identifier.type.ExportableRule;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 
 import java.util.Arrays;
@@ -35,24 +35,28 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
- * Result set for show database discovery rule.
+ * Query result set for show database discovery rule.
  */
 public final class DatabaseDiscoveryRuleQueryResultSet implements DistSQLResultSet {
     
-    private static final String NAME = "name";
+    private static final String GROUP_NAME = "group_name";
     
     private static final String DATA_SOURCE_NAMES = "data_source_names";
     
     private static final String PRIMARY_DATA_SOURCE_NAME = "primary_data_source_name";
     
-    private static final String DISCOVER_TYPE = "discover_type";
+    private static final String NAME = "name";
     
-    private static final String HEARTBEAT = "heartbeat";
+    private static final String DISCOVER_TYPE = "discovery_type";
     
-    private Iterator<DatabaseDiscoveryDataSourceRuleConfiguration> data;
+    private static final String HEARTBEAT = "discovery_heartbeat";
+    
+    private Iterator<DatabaseDiscoveryDataSourceRuleConfiguration> dataSourceRules;
     
     private Map<String, ShardingSphereAlgorithmConfiguration> discoveryTypes;
     
@@ -61,50 +65,47 @@ public final class DatabaseDiscoveryRuleQueryResultSet implements DistSQLResultS
     private Map<String, String> primaryDataSources;
     
     @Override
-    public void init(final ShardingSphereMetaData metaData, final SQLStatement sqlStatement) {
-        Optional<DatabaseDiscoveryRuleConfiguration> ruleConfig = metaData.getRuleMetaData().getConfigurations()
-                .stream().filter(each -> each instanceof DatabaseDiscoveryRuleConfiguration).map(each -> (DatabaseDiscoveryRuleConfiguration) each).findAny();
-        data = ruleConfig.map(optional -> optional.getDataSources().iterator()).orElse(Collections.emptyIterator());
-        discoveryTypes = ruleConfig.map(DatabaseDiscoveryRuleConfiguration::getDiscoveryTypes).orElse(Collections.emptyMap());
-        discoveryHeartbeats = ruleConfig.map(DatabaseDiscoveryRuleConfiguration::getDiscoveryHeartbeats).orElse(Collections.emptyMap());
-        Optional<ExportableRule> exportableRule = metaData.getRuleMetaData().getRules()
-                .stream().filter(each -> each instanceof ExportableRule).map(each -> (ExportableRule) each).findAny();
-        primaryDataSources = (Map<String, String>) exportableRule.map(optional -> optional.export().get(DatabaseDiscoveryRuleConstants.PRIMARY_DATA_SOURCE_KEY)).orElse(Collections.emptyMap());
+    public void init(final ShardingSphereDatabase database, final SQLStatement sqlStatement) {
+        Optional<DatabaseDiscoveryRule> rule = database.getRuleMetaData().findSingleRule(DatabaseDiscoveryRule.class);
+        Preconditions.checkState(rule.isPresent());
+        DatabaseDiscoveryRuleConfiguration ruleConfig = (DatabaseDiscoveryRuleConfiguration) rule.get().getConfiguration();
+        dataSourceRules = ruleConfig.getDataSources().iterator();
+        discoveryTypes = ruleConfig.getDiscoveryTypes();
+        discoveryHeartbeats = ruleConfig.getDiscoveryHeartbeats();
+        primaryDataSources = rule.get().getDataSourceRules().entrySet().stream().collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().getPrimaryDataSourceName(), (a, b) -> b));
     }
     
     @Override
     public Collection<String> getColumnNames() {
-        return Arrays.asList(NAME, DATA_SOURCE_NAMES, PRIMARY_DATA_SOURCE_NAME, DISCOVER_TYPE, HEARTBEAT);
+        return Arrays.asList(GROUP_NAME, DATA_SOURCE_NAMES, PRIMARY_DATA_SOURCE_NAME, DISCOVER_TYPE, HEARTBEAT);
     }
     
     @Override
     public boolean next() {
-        return data.hasNext();
+        return dataSourceRules.hasNext();
     }
     
     @Override
     public Collection<Object> getRowData() {
-        DatabaseDiscoveryDataSourceRuleConfiguration dataSourceRuleConfig = data.next();
+        DatabaseDiscoveryDataSourceRuleConfiguration dataSourceRuleConfig = dataSourceRules.next();
         Map<String, String> typeMap = new LinkedHashMap<>();
         typeMap.put(NAME, dataSourceRuleConfig.getDiscoveryTypeName());
         typeMap.putAll(convertToMap(discoveryTypes.get(dataSourceRuleConfig.getDiscoveryTypeName())));
         Map<String, String> heartbeatMap = new LinkedHashMap<>();
         heartbeatMap.put(NAME, dataSourceRuleConfig.getDiscoveryHeartbeatName());
         heartbeatMap.putAll(convertToMap(discoveryHeartbeats.get(dataSourceRuleConfig.getDiscoveryHeartbeatName())));
-        String name = dataSourceRuleConfig.getName();
-        String primaryDataSourceName = null == primaryDataSources.get(name) ? "" : primaryDataSources.get(name);
-        return Arrays.asList(name, String.join(",", dataSourceRuleConfig.getDataSourceNames()), primaryDataSourceName, typeMap, heartbeatMap);
+        String groupName = dataSourceRuleConfig.getGroupName();
+        String primaryDataSourceName = null == primaryDataSources.get(groupName) ? "" : primaryDataSources.get(groupName);
+        return Arrays.asList(groupName, String.join(",", dataSourceRuleConfig.getDataSourceNames()), primaryDataSourceName, typeMap, heartbeatMap);
     }
     
+    @SuppressWarnings("unchecked")
     private Map<String, String> convertToMap(final Object obj) {
-        if (obj == null) {
-            return Collections.emptyMap();
-        }
-        return new Gson().fromJson(new Gson().toJson(obj), LinkedHashMap.class);
+        return null == obj ? Collections.emptyMap() : new Gson().fromJson(new Gson().toJson(obj), LinkedHashMap.class);
     }
     
     @Override
     public String getType() {
-        return ShowDatabaseDiscoveryRulesStatement.class.getCanonicalName();
+        return ShowDatabaseDiscoveryRulesStatement.class.getName();
     }
 }

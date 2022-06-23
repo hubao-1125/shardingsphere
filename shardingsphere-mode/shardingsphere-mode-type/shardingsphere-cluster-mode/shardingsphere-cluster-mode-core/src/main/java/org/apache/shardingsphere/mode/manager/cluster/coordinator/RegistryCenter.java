@@ -18,10 +18,11 @@
 package org.apache.shardingsphere.mode.manager.cluster.coordinator;
 
 import lombok.Getter;
+import org.apache.shardingsphere.infra.instance.ComputeNodeInstance;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.lock.service.LockRegistryService;
+import org.apache.shardingsphere.mode.manager.cluster.coordinator.lock.service.MutexLockRegistryService;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.GovernanceWatcherFactory;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.cache.subscriber.ScalingRegistrySubscriber;
-import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.config.subscriber.GlobalRuleRegistrySubscriber;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.metadata.subscriber.SchemaMetaDataRegistrySubscriber;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.process.subscriber.ProcessRegistrySubscriber;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.service.ComputeNodeStatusService;
@@ -49,20 +50,18 @@ public final class RegistryCenter {
     
     private final GovernanceWatcherFactory listenerFactory;
     
-    public RegistryCenter(final ClusterPersistRepository repository, final Integer port) {
+    public RegistryCenter(final ClusterPersistRepository repository) {
         this.repository = repository;
-        ClusterInstance.getInstance().init(port);
         storageNodeStatusService = new StorageNodeStatusService(repository);
         computeNodeStatusService = new ComputeNodeStatusService(repository);
-        lockService = new LockRegistryService(repository);
+        lockService = new MutexLockRegistryService(repository);
         listenerFactory = new GovernanceWatcherFactory(repository);
         createSubscribers(repository);
     }
     
     private void createSubscribers(final ClusterPersistRepository repository) {
         new SchemaMetaDataRegistrySubscriber(repository);
-        new GlobalRuleRegistrySubscriber(repository);
-        new ComputeNodeStatusSubscriber(repository);
+        new ComputeNodeStatusSubscriber(this, repository);
         new StorageNodeStatusSubscriber(repository);
         new ScalingRegistrySubscriber(repository);
         new ProcessRegistrySubscriber(repository);
@@ -70,9 +69,12 @@ public final class RegistryCenter {
     
     /**
      * Online instance.
+     * 
+     * @param computeNodeInstance compute node instance
      */
-    public void onlineInstance() {
-        computeNodeStatusService.registerOnline();
+    public void onlineInstance(final ComputeNodeInstance computeNodeInstance) {
+        computeNodeStatusService.registerOnline(computeNodeInstance.getInstanceDefinition());
+        computeNodeStatusService.persistInstanceLabels(computeNodeInstance.getCurrentInstanceId(), computeNodeInstance.getLabels());
         listenerFactory.watchListeners();
     }
 }

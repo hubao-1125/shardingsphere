@@ -38,7 +38,7 @@ it.run.additional.cases=false
 it.scenarios=db,tbl,dbtbl_with_replica_query,replica_query
 
 # database type, could define multiple databases(H2,MySQL,Oracle,SQLServer,PostgreSQL)
-it.databases=MySQL,PostgreSQL
+it.cluster.databases=MySQL,PostgreSQL
 
 # MySQL configuration
 it.mysql.host=127.0.0.1
@@ -123,6 +123,21 @@ This file is very like the dataset.xml mentioned before, and the difference is t
 ```
 Util now, all config files are ready, just launch the corresponding test case is fine.With no need to modify any Java code, only set up some config files.
 This will reduce the difficulty for ShardingSphere testing.
+
+### Running Integration Tests
+
+#### Run with Docker
+
+```bash
+./mvnw -B clean install -f shardingsphere-test/shardingsphere-integration-test/pom.xml -Pit.env.docker -Dit.cluster.adapters=proxy,jdbc -Dit.scenarios=${scenario_name_1,scenario_name_1,scenario_name_n} -Dit.cluster.databases=MySQL
+```
+Running the above command will build a Docker image `apache/shardingsphere-proxy-test:latest` for integration testing.
+The existing test Docker image can be reused without rebuilding if only the test code is modified.
+Use the following command to skip the image building and run the integration tests directly:
+
+```bash
+./mvnw -B clean install -f shardingsphere-test/shardingsphere-integration-test/shardingsphere-integration-test-suite/pom.xml -Pit.env.docker -Dit.cluster.adapters=proxy,jdbc -Dit.scenarios=${scenario_name_1,scenario_name_1,scenario_name_n} -Dit.cluster.databases=MySQL
+```
 
 ## Notice
 

@@ -27,11 +27,8 @@ import org.apache.shardingsphere.infra.yaml.config.pojo.YamlConfiguration;
 @Getter
 @Setter
 public final class YamlSQLParserCacheOptionRuleConfiguration implements YamlConfiguration {
-
+    
     private int initialCapacity;
-
+    
     private long maximumSize;
-
-    private int concurrencyLevel;
 }
-

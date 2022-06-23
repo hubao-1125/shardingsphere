@@ -17,14 +17,21 @@
 
 package org.apache.shardingsphere.data.pipeline.postgresql.ingest;
 
-import org.apache.shardingsphere.data.pipeline.core.ingest.channel.MemoryChannel;
-import org.apache.shardingsphere.data.pipeline.core.ingest.config.DumperConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.config.TableNameSchemaNameMapping;
+import org.apache.shardingsphere.data.pipeline.api.config.ingest.DumperConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.datasource.config.PipelineDataSourceConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.datasource.config.impl.StandardPipelineDataSourceConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.metadata.ActualTableName;
+import org.apache.shardingsphere.data.pipeline.api.metadata.LogicTableName;
+import org.apache.shardingsphere.data.pipeline.core.datasource.PipelineDataSourceManager;
+import org.apache.shardingsphere.data.pipeline.core.ingest.channel.memory.MultiplexMemoryPipelineChannel;
 import org.apache.shardingsphere.data.pipeline.core.ingest.exception.IngestException;
+import org.apache.shardingsphere.data.pipeline.core.metadata.loader.PipelineTableMetaDataLoader;
 import org.apache.shardingsphere.data.pipeline.core.util.ReflectionUtil;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.LogicalReplication;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.WalPosition;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.decode.PostgreSQLLogSequenceNumber;
-import org.apache.shardingsphere.infra.config.datasource.jdbc.config.impl.StandardJDBCDataSourceConfiguration;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,8 +46,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -60,19 +66,26 @@ public final class PostgreSQLWalDumperTest {
     
     private WalPosition position;
     
+    private DumperConfiguration dumperConfig;
+    
     private PostgreSQLWalDumper walDumper;
     
-    private StandardJDBCDataSourceConfiguration jdbcDataSourceConfig;
+    private MultiplexMemoryPipelineChannel channel;
     
-    private MemoryChannel channel;
+    private final PipelineDataSourceManager dataSourceManager = new PipelineDataSourceManager();
     
     @Before
     public void setUp() {
         position = new WalPosition(new PostgreSQLLogSequenceNumber(LogSequenceNumber.valueOf(100L)));
-        walDumper = new PostgreSQLWalDumper(mockDumperConfiguration(), position);
-        channel = new MemoryChannel(records -> {
-        });
-        walDumper.setChannel(channel);
+        channel = new MultiplexMemoryPipelineChannel();
+        dumperConfig = mockDumperConfiguration();
+        PipelineTableMetaDataLoader metaDataLoader = new PipelineTableMetaDataLoader(dataSourceManager.getDataSource(dumperConfig.getDataSourceConfig()));
+        walDumper = new PostgreSQLWalDumper(dumperConfig, position, channel, metaDataLoader);
+    }
+    
+    @After
+    public void tearDown() {
+        dataSourceManager.close();
     }
     
     private DumperConfiguration mockDumperConfiguration() {
@@ -87,22 +100,23 @@ public final class PostgreSQLWalDumperTest {
         } catch (final SQLException e) {
             throw new RuntimeException("Init table failed", e);
         }
-        jdbcDataSourceConfig = new StandardJDBCDataSourceConfiguration(jdbcUrl, username, password);
+        PipelineDataSourceConfiguration dataSourceConfig = new StandardPipelineDataSourceConfiguration(jdbcUrl, username, password);
         DumperConfiguration result = new DumperConfiguration();
-        result.setDataSourceConfig(jdbcDataSourceConfig);
-        Map<String, String> tableNameMap = new HashMap<>();
-        tableNameMap.put("t_order_0", "t_order");
-        result.setTableNameMap(tableNameMap);
+        result.setDataSourceConfig(dataSourceConfig);
+        result.setTableNameMap(Collections.singletonMap(new ActualTableName("t_order_0"), new LogicTableName("t_order")));
+        result.setTableNameSchemaNameMapping(new TableNameSchemaNameMapping(Collections.emptyMap()));
         return result;
     }
     
     @Test
     public void assertStart() throws SQLException, NoSuchFieldException, IllegalAccessException {
+        StandardPipelineDataSourceConfiguration dataSourceConfig = (StandardPipelineDataSourceConfiguration) dumperConfig.getDataSourceConfig();
         try {
             ReflectionUtil.setFieldValue(walDumper, "logicalReplication", logicalReplication);
-            when(logicalReplication.createPgConnection(jdbcDataSourceConfig)).thenReturn(pgConnection);
+            when(logicalReplication.createConnection(dataSourceConfig)).thenReturn(pgConnection);
             when(pgConnection.unwrap(PgConnection.class)).thenReturn(pgConnection);
-            when(logicalReplication.createReplicationStream(pgConnection, PostgreSQLPositionInitializer.SLOT_NAME, position.getLogSequenceNumber())).thenReturn(pgReplicationStream);
+            when(logicalReplication.createReplicationStream(pgConnection, PostgreSQLPositionInitializer.getUniqueSlotName(pgConnection), position.getLogSequenceNumber()))
+                    .thenReturn(pgReplicationStream);
             ByteBuffer data = ByteBuffer.wrap("table public.t_order_0: DELETE: order_id[integer]:1".getBytes());
             when(pgReplicationStream.readPending()).thenReturn(null).thenReturn(data).thenThrow(new SQLException(""));
             when(pgReplicationStream.getLastReceiveLSN()).thenReturn(LogSequenceNumber.valueOf(101L));

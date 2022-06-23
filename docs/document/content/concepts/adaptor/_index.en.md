@@ -33,11 +33,13 @@ It can be considered as an enhanced JDBC driver, which is fully compatible with 
 
 ShardingSphere-JDBC is suitable for java application.
 
+**Source Codes: https://github.com/apache/shardingsphere/tree/master/shardingsphere-jdbc**
+
 ## ShardingSphere-Proxy
 
 ShardingSphere-Proxy is the second product of Apache ShardingSphere.
 It defines itself as a transparent database proxy, providing a database server that encapsulates database binary protocol to support heterogeneous languages.
-Currently, MySQL and PostgreSQL (compatible with PostgreSQL-based databases, such as openGauss) versions are provided. It can use any kind of terminal (such as MySQL Command Client, MySQL Workbench, etc.) that is compatible of MySQL or PostgreSQL protocol to operate data, which is friendlier to DBAs
+Currently, MySQL and PostgreSQL (compatible with PostgreSQL-based databases, such as openGauss) versions are provided. It can use any kind of terminal (such as MySQL Command Client, MySQL Workbench, etc.) that is compatible with MySQL or PostgreSQL protocol to operate data, which is friendlier to DBAs
 
 * Totally transparent to applications, it can be used directly as MySQL/PostgreSQL;
 * Applicable to any kind of client end that is compatible with MySQL/PostgreSQL protocol.
@@ -54,6 +56,8 @@ Currently, MySQL and PostgreSQL (compatible with PostgreSQL-based databases, suc
 | Static Entry             | No                    | `Yes`                        |
 
 The advantages of ShardingSphere-Proxy lie in supporting heterogeneous languages and providing operational entries for DBA.
+
+**Source Codes: https://github.com/apache/shardingsphere/tree/master/shardingsphere-proxy**
 
 ## Hybrid Adaptors
 

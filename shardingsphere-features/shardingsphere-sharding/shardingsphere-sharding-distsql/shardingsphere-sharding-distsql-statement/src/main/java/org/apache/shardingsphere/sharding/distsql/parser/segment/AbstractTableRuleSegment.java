@@ -38,12 +38,13 @@ public abstract class AbstractTableRuleSegment implements ASTNode {
     private final Collection<String> dataSourceNodes;
     
     @Setter
-    private KeyGenerateSegment keyGenerateSegment;
+    private KeyGenerateStrategySegment keyGenerateStrategySegment;
     
     /**
      * Empty table rule segment.
      */
     public static class EmptyTableRuleSegment extends AbstractTableRuleSegment {
+        
         public EmptyTableRuleSegment() {
             super(null, null);
         }

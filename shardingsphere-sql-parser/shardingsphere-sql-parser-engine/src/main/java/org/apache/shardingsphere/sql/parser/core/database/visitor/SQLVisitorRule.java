@@ -23,12 +23,14 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatementType;
 
 /**
- * SQL Visitor rule.
+ * SQL visitor rule.
  */
 @RequiredArgsConstructor
 public enum SQLVisitorRule {
     
     SELECT("Select", SQLStatementType.DML),
+    
+    TABLE("Table", SQLStatementType.DML),
     
     INSERT("Insert", SQLStatementType.DML),
     
@@ -44,7 +46,31 @@ public enum SQLVisitorRule {
     
     CREATE_TABLE("CreateTable", SQLStatementType.DDL),
     
+    CREATE_AGGREGATE("CreateAggregate", SQLStatementType.DDL),
+    
+    RENAME_TABLE("RenameTable", SQLStatementType.DDL),
+    
     ALTER_TABLE("AlterTable", SQLStatementType.DDL),
+    
+    ALTER_TYPE("AlterType", SQLStatementType.DDL),
+    
+    ALTER_AGGREGATE("AlterAggregate", SQLStatementType.DDL),
+    
+    ALTER_COLLATION("AlterCollation", SQLStatementType.DDL),
+    
+    ALTER_DEFAULT_PRIVILEGES("AlterDefaultPrivileges", SQLStatementType.DDL),
+    
+    ALTER_FOREIGN_DATA_WRAPPER("AlterForeignDataWrapper", SQLStatementType.DDL),
+    
+    ALTER_FOREIGN_TABLE("AlterForeignTable", SQLStatementType.DDL),
+    
+    DROP_FOREIGN_TABLE("DropForeignTable", SQLStatementType.DDL),
+    
+    ALTER_GROUP("AlterGroup", SQLStatementType.DDL),
+    
+    ALTER_MATERIALIZED_VIEW("AlterMaterializedView", SQLStatementType.DDL),
+    
+    ALTER_OPERATOR("AlterOperator", SQLStatementType.DDL),
     
     DROP_TABLE("DropTable", SQLStatementType.DDL),
     
@@ -58,27 +84,63 @@ public enum SQLVisitorRule {
     
     CREATE_PROCEDURE("CreateProcedure", SQLStatementType.DDL),
     
+    CREATE_PUBLICATION("CreatePublication", SQLStatementType.DDL),
+    
+    ALTER_PUBLICATION("AlterPublication", SQLStatementType.DDL),
+    
     ALTER_PROCEDURE("AlterProcedure", SQLStatementType.DDL),
-
+    
     ALTER_STATEMENT("AlterStatement", SQLStatementType.DDL),
-
+    
     DROP_PROCEDURE("DropProcedure", SQLStatementType.DDL),
+    
+    DROP_ROUTINE("DropRoutine", SQLStatementType.DDL),
+    
+    DROP_RULE("DropRule", SQLStatementType.DDL),
+    
+    DROP_STATISTICS("DropStatistics", SQLStatementType.DDL),
+    
+    DROP_PUBLICATION("DropPublication", SQLStatementType.DDL),
+    
+    DROP_SUBSCRIPTION("DropSubscription", SQLStatementType.DDL),
     
     CREATE_FUNCTION("CreateFunction", SQLStatementType.DDL),
     
     ALTER_FUNCTION("AlterFunction", SQLStatementType.DDL),
     
+    DROP_CAST("DropCast", SQLStatementType.DDL),
+    
     DROP_FUNCTION("DropFunction", SQLStatementType.DDL),
     
+    DROP_GROUP("DropGroup", SQLStatementType.DDL),
+    
     CREATE_DATABASE("CreateDatabase", SQLStatementType.DDL),
-
+    
     CREATE_DATABASE_LINK("CreateDatabaseLink", SQLStatementType.DDL),
     
     ALTER_DATABASE("AlterDatabase", SQLStatementType.DDL),
     
+    ALTER_DATABASE_LINK("AlterDatabaseLink", SQLStatementType.DDL),
+    
     DROP_DATABASE("DropDatabase", SQLStatementType.DDL),
     
+    DROP_DATABASE_LINK("DropDatabaseLink", SQLStatementType.DDL),
+    
+    ALTER_DATABASE_DICTIONARY("AlterDatabaseDictionary", SQLStatementType.DDL),
+    
+    CREATE_DIMENSION("CreateDimension", SQLStatementType.DDL),
+    
+    ALTER_DIMENSION("AlterDimension", SQLStatementType.DDL),
+    
+    DROP_DIMENSION("DropDimension", SQLStatementType.DDL),
+    
+    ALTER_DIRECTORY("AlterDirectory", SQLStatementType.DDL),
+    
+    DROP_DIRECTORY("DropDirectory", SQLStatementType.DDL),
+    
     CREATE_EVENT("CreateEvent", SQLStatementType.DDL),
+    
+    CREATE_EDITION("CreateEdition", SQLStatementType.DDL),
     
     ALTER_EVENT("AlterEvent", SQLStatementType.DDL),
     
@@ -94,6 +156,12 @@ public enum SQLVisitorRule {
     
     CREATE_SERVER("CreateServer", SQLStatementType.DDL),
     
+    CREATE_SYNONYM("CreateSynonym", SQLStatementType.DDL),
+    
+    DROP_SYNONYM("DropSynonym", SQLStatementType.DDL),
+    
+    CREATE_DIRECTORY("CreateDirectory", SQLStatementType.DDL),
+    
     ALTER_SERVER("AlterServer", SQLStatementType.DDL),
     
     ALTER_SESSION("AlterSession", SQLStatementType.DDL),
@@ -103,23 +171,29 @@ public enum SQLVisitorRule {
     DROP_SERVER("DropServer", SQLStatementType.DDL),
     
     CREATE_TRIGGER("CreateTrigger", SQLStatementType.DDL),
-
+    
     ALTER_TRIGGER("AlterTrigger", SQLStatementType.DDL),
     
     DROP_TRIGGER("DropTrigger", SQLStatementType.DDL),
+    
+    DROP_EVENT_TRIGGER("DropEventTrigger", SQLStatementType.DDL),
     
     CREATE_VIEW("CreateView", SQLStatementType.DDL),
     
     ALTER_VIEW("AlterView", SQLStatementType.DDL),
     
+    DROP_PACKAGE("DropPackage", SQLStatementType.DDL),
+    
+    ALTER_PACKAGE("AlterPackage", SQLStatementType.DDL),
+    
     DROP_VIEW("DropView", SQLStatementType.DDL),
-
+    
     ANALYZE("Analyze", SQLStatementType.DDL),
-
+    
     CREATE_SEQUENCE("CreateSequence", SQLStatementType.DDL),
-
+    
     ALTER_SEQUENCE("AlterSequence", SQLStatementType.DDL),
-
+    
     DROP_SEQUENCE("DropSequence", SQLStatementType.DDL),
     
     ALTER_SYNONYM("AlterSynonym", SQLStatementType.DDL),
@@ -136,6 +210,8 @@ public enum SQLVisitorRule {
     
     DROP_TABLESPACE("DropTablespace", SQLStatementType.DDL),
     
+    DROP_TEXT_SEARCH("DropTextSearch", SQLStatementType.DDL),
+    
     ASSOCIATE_STATISTICS("AssociateStatistics", SQLStatementType.DDL),
     
     DISASSOCIATE_STATISTICS("DisassociateStatistics", SQLStatementType.DDL),
@@ -143,16 +219,28 @@ public enum SQLVisitorRule {
     AUDIT("Audit", SQLStatementType.DDL),
     
     NOAUDIT("NoAudit", SQLStatementType.DDL),
-
+    
     COMMENT("Comment", SQLStatementType.DDL),
-
+    
     FLASHBACK_DATABASE("FlashbackDatabase", SQLStatementType.DDL),
-
+    
     FLASHBACK_TABLE("FlashbackTable", SQLStatementType.DDL),
     
     PURGE("Purge", SQLStatementType.DDL),
-
+    
     RENAME("Rename", SQLStatementType.DDL),
+    
+    CREATE_EXTENSION("CreateExtension", SQLStatementType.DDL),
+    
+    ALTER_EXTENSION("AlterExtension", SQLStatementType.DDL),
+    
+    DROP_EXTENSION("DropExtension", SQLStatementType.DDL),
+    
+    ALTER_RULE("AlterRule", SQLStatementType.DDL),
+    
+    DECLARE("Declare", SQLStatementType.DDL),
+    
+    DISCARD("Discard", SQLStatementType.DDL),
     
     SET_CONSTRAINTS("SetConstraints", SQLStatementType.TCL),
     
@@ -184,6 +272,14 @@ public enum SQLVisitorRule {
     
     ROLLBACK_TO_SAVEPOINT("RollbackToSavepoint", SQLStatementType.TCL),
     
+    LOCK("Lock", SQLStatementType.TCL),
+    
+    UNLOCK("Unlock", SQLStatementType.TCL),
+    
+    COMMIT_PREPARED("CommitPrepared", SQLStatementType.TCL),
+    
+    ROLLBACK_PREPARED("RollbackPrepared", SQLStatementType.TCL),
+    
     GRANT("Grant", SQLStatementType.DCL),
     
     GRANT_ROLE_OR_PRIVILEGE_TO("GrantRoleOrPrivilegeTo", SQLStatementType.DCL),
@@ -208,6 +304,8 @@ public enum SQLVisitorRule {
     
     RENAME_USER("RenameUser", SQLStatementType.DCL),
     
+    SET_USER("SetUser", SQLStatementType.DCL),
+    
     CREATE_ROLE("CreateRole", SQLStatementType.DCL),
     
     ALTER_ROLE("AlterRole", SQLStatementType.DCL),
@@ -226,9 +324,13 @@ public enum SQLVisitorRule {
     
     SET_PASSWORD("SetPassword", SQLStatementType.DCL),
     
+    REVERT("Revert", SQLStatementType.DCL),
+    
     USE("Use", SQLStatementType.DAL),
     
     DESC("Desc", SQLStatementType.DAL),
+    
+    HELP("Help", SQLStatementType.DAL),
     
     EXPLAIN("Explain", SQLStatementType.DAL),
     
@@ -265,15 +367,15 @@ public enum SQLVisitorRule {
     SHOW_STATUS("ShowStatus", SQLStatementType.DAL),
     
     SHOW("Show", SQLStatementType.DAL),
-
+    
     SHOW_RELAYLOG_EVENTS("ShowRelaylogEventsStatement", SQLStatementType.DAL),
-
+    
     SHOW_PROCEDURE_CODE("ShowProcedureCodeStatement", SQLStatementType.DAL),
     
     SHOW_OPEN_TABLES("ShowOpenTables", SQLStatementType.DAL),
-
+    
     SHOW_TRIGGERS("ShowTriggers", SQLStatementType.DAL),
-
+    
     SET_VARIABLE("SetVariable", SQLStatementType.DAL),
     
     SET("Set", SQLStatementType.DAL),
@@ -297,11 +399,11 @@ public enum SQLVisitorRule {
     UNINSTALL("Uninstall", SQLStatementType.DAL),
     
     FLUSH("Flush", SQLStatementType.DAL),
-
+    
     RESTART("Restart", SQLStatementType.DAL),
     
     SHUTDOWN("Shutdown", SQLStatementType.DAL),
-
+    
     CREATE_RESOURCE_GROUP("CreateResourceGroup", SQLStatementType.DAL),
     
     SET_RESOURCE_GROUP("SetResourceGroup", SQLStatementType.DAL),
@@ -309,7 +411,7 @@ public enum SQLVisitorRule {
     BINLOG("Binlog", SQLStatementType.DAL),
     
     OPTIMIZE_TABLE("OptimizeTable", SQLStatementType.DAL),
-
+    
     CLONE("Clone", SQLStatementType.DAL),
     
     REPAIR_TABLE("RepairTable", SQLStatementType.DAL),
@@ -317,9 +419,9 @@ public enum SQLVisitorRule {
     KILL("Kill", SQLStatementType.DAL),
     
     RESET("ResetStatement", SQLStatementType.DAL),
-
+    
     RESET_PERSIST("ResetPersistStatement", SQLStatementType.DAL),
-
+    
     CACHE_INDEX("CacheIndex", SQLStatementType.DAL),
     
     LOAD_INDEX_INFO("LoadIndexInfo", SQLStatementType.DAL),
@@ -332,30 +434,150 @@ public enum SQLVisitorRule {
     
     ALTER_RESOURCE_GROUP("AlterResourceGroup", SQLStatementType.DAL),
     
+    DELIMITER("Delimiter", SQLStatementType.DAL),
+    
     CALL("Call", SQLStatementType.DML),
     
-    CHANGE_MASTER("ChangeMaster", SQLStatementType.RL), 
+    CHANGE_MASTER("ChangeMaster", SQLStatementType.RL),
     
     START_SLAVE("StartSlave", SQLStatementType.RL),
     
     STOP_SLAVE("StopSlave", SQLStatementType.RL),
-
+    
     XA("Xa", SQLStatementType.TCL),
     
     ABORT("Abort", SQLStatementType.TCL),
-
+    
     CREATE_SCHEMA("CreateSchema", SQLStatementType.DDL),
-
+    
     ALTER_SCHEMA("AlterSchema", SQLStatementType.DDL),
-
+    
     DROP_SCHEMA("DropSchema", SQLStatementType.DDL),
-
+    
     CREATE_SERVICE("CreateService", SQLStatementType.DDL),
-
+    
     ALTER_SERVICE("AlterService", SQLStatementType.DDL),
-
-    DROP_SERVICE("DropService", SQLStatementType.DDL);
-
+    
+    DROP_SERVICE("DropService", SQLStatementType.DDL),
+    
+    DROP_DOMAIN("DropDomain", SQLStatementType.DDL),
+    
+    CREATE_DOMAIN("CreateDomain", SQLStatementType.DDL),
+    
+    CREATE_RULE("CreateRule", SQLStatementType.DDL),
+    
+    CREATE_LANGUAGE("CreateLanguage", SQLStatementType.DDL),
+    
+    ALTER_LANGUAGE("AlterLanguage", SQLStatementType.DDL),
+    
+    DROP_LANGUAGE("DropLanguage", SQLStatementType.DDL),
+    
+    CREATE_CONVERSION("CreateConversion", SQLStatementType.DDL),
+    
+    CREATE_CAST("CreateCast", SQLStatementType.DDL),
+    
+    CREATE_TYPE("CreateType", SQLStatementType.DDL),
+    
+    DROP_CONVERSION("DropConversion", SQLStatementType.DDL),
+    
+    ALTER_DOMAIN("AlterDomain", SQLStatementType.DDL),
+    
+    ALTER_POLICY("AlterPolicy", SQLStatementType.DDL),
+    
+    ALTER_CONVERSION("AlterConversion", SQLStatementType.DDL),
+    
+    CREATE_TEXT_SEARCH("CreateTextSearch", SQLStatementType.DDL),
+    
+    ALTER_TEXT_SEARCH_DICTIONARY("AlterTextSearchDictionary", SQLStatementType.DDL),
+    
+    ALTER_TEXT_SEARCH_TEMPLATE("AlterTextSearchTemplate", SQLStatementType.DDL),
+    
+    ALTER_TEXT_SEARCH_PARSER("AlterTextSearchParser", SQLStatementType.DDL),
+    
+    DROP_POLICY("DropPolicy", SQLStatementType.DDL),
+    
+    DROP_OWNED("DropOwned", SQLStatementType.DDL),
+    
+    DROP_OPERATOR("DropOperator", SQLStatementType.DDL),
+    
+    DROP_MATERIALIZED_VIEW("DropMaterializedView", SQLStatementType.DDL),
+    
+    DROP_AGGREGATE("DropAggregate", SQLStatementType.DDL),
+    
+    DROP_COLLATION("DropCollation", SQLStatementType.DDL),
+    
+    DROP_FOREIGN_DATA_WRAPPER("DropForeignDataWrapper", SQLStatementType.DDL),
+    
+    DROP_TYPE("DropType", SQLStatementType.DDL),
+    
+    DROP_OPERATOR_CLASS("DropOperatorClass", SQLStatementType.DDL),
+    
+    DROP_OPERATOR_FAMILY("DropOperatorFamily", SQLStatementType.DDL),
+    
+    DROP_ACCESS_METHOD("DropAccessMethod", SQLStatementType.DDL),
+    
+    DROP_OUTLINE("DropOutline", SQLStatementType.DDL),
+    
+    ALTER_OUTLINE("AlterOutline", SQLStatementType.DDL),
+    
+    ALTER_ANALYTIC_VIEW("AlterAnalyticView", SQLStatementType.DDL),
+    
+    DROP_EDITION("DropEdition", SQLStatementType.DDL),
+    
+    ALTER_ATTRIBUTE_DIMENSION("AlterAttributeDimension", SQLStatementType.DDL),
+    
+    CREATE_CONTEXT("CreateContext", SQLStatementType.DDL),
+    
+    CREATE_SPFILE("CreateSPFile", SQLStatementType.DDL),
+    
+    CREATE_PFILE("CreatePFile", SQLStatementType.DDL),
+    
+    CREATE_CONTROL_FILE("CreateControlFile", SQLStatementType.DDL),
+    
+    CREATE_FLASHBACK_ARCHIVE("CreateFlashbackArchive", SQLStatementType.DDL),
+    
+    ALTER_FLASHBACK_ARCHIVE("AlterFlashbackArchive", SQLStatementType.DDL),
+    
+    DROP_FLASHBACK_ARCHIVE("DropFlashbackArchive", SQLStatementType.DDL),
+    
+    CREATE_DISKGROUP("CreateDiskgroup", SQLStatementType.DDL),
+    
+    DROP_DISKGROUP("DropDiskgroup", SQLStatementType.DDL),
+    
+    CREATE_ROLLBACK_SEGMENT("CreateRollbackSegment", SQLStatementType.DDL),
+    
+    DROP_ROLLBACK_SEGMENT("DropRollbackSegment", SQLStatementType.DDL),
+    
+    CREATE_LOCKDOWN_PROFILE("CreateLockdownProfile", SQLStatementType.DDL),
+    
+    DROP_LOCKDOWN_PROFILE("DropLockdownProfile", SQLStatementType.DDL),
+    
+    CREATE_INMEMORY_JOIN_GROUP("CreateInmemoryJoinGroup", SQLStatementType.DDL),
+    
+    ALTER_INMEMORY_JOIN_GROUP("AlterInmemoryJoinGroup", SQLStatementType.DDL),
+    
+    DROP_INMEMORY_JOIN_GROUP("DropInmemoryJoinGroup", SQLStatementType.DDL),
+    
+    CREATE_RESTORE_POINT("CreateRestorePoint", SQLStatementType.DDL),
+    
+    DROP_RESTORE_POINT("DropRestorePoint", SQLStatementType.DDL),
+    
+    CURSOR("Cursor", SQLStatementType.DDL),
+    
+    CLOSE("Close", SQLStatementType.DDL),
+    
+    MOVE("Move", SQLStatementType.DDL),
+    
+    FETCH("Fetch", SQLStatementType.DDL),
+    
+    CHECKPOINT("Checkpoint", SQLStatementType.DML),
+    
+    CLUSTER("Cluster", SQLStatementType.DDL),
+    
+    CREATE_ACCESS_METHOD("CreateAccessMethod", SQLStatementType.DDL),
+    
+    DO("DoStatement", SQLStatementType.DML);
+    
     private final String name;
     
     @Getter

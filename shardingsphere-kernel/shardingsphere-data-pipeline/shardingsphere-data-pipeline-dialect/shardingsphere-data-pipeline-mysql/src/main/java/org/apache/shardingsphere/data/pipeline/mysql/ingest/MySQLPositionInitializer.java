@@ -18,8 +18,8 @@
 package org.apache.shardingsphere.data.pipeline.mysql.ingest;
 
 import com.google.common.base.Preconditions;
-import org.apache.shardingsphere.data.pipeline.core.ingest.position.PositionInitializer;
 import org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog.BinlogPosition;
+import org.apache.shardingsphere.data.pipeline.spi.ingest.position.PositionInitializer;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -49,18 +49,25 @@ public final class MySQLPositionInitializer implements PositionInitializer {
     }
     
     private BinlogPosition getBinlogPosition(final Connection connection) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement("SHOW MASTER STATUS");
-             ResultSet resultSet = preparedStatement.executeQuery()) {
+        try (
+                PreparedStatement preparedStatement = connection.prepareStatement("SHOW MASTER STATUS");
+                ResultSet resultSet = preparedStatement.executeQuery()) {
             resultSet.next();
             return new BinlogPosition(resultSet.getString(1), resultSet.getLong(2));
         }
     }
     
     private long getServerId(final Connection connection) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement("SHOW VARIABLES LIKE 'server_id'");
-             ResultSet resultSet = preparedStatement.executeQuery()) {
+        try (
+                PreparedStatement preparedStatement = connection.prepareStatement("SHOW VARIABLES LIKE 'server_id'");
+                ResultSet resultSet = preparedStatement.executeQuery()) {
             resultSet.next();
             return resultSet.getLong(2);
         }
+    }
+    
+    @Override
+    public String getType() {
+        return "MySQL";
     }
 }

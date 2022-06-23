@@ -17,22 +17,42 @@
 
 grammar RDLStatement;
 
-import Keyword, Literals, Symbol;
+import BaseRule;
 
 createDatabaseDiscoveryRule
-    : CREATE DB_DISCOVERY RULE databaseDiscoveryRule  (COMMA databaseDiscoveryRule)*
+    : CREATE DB_DISCOVERY RULE databaseDiscoveryRule (COMMA databaseDiscoveryRule)*
     ;
 
 alterDatabaseDiscoveryRule
-    : ALTER DB_DISCOVERY RULE databaseDiscoveryRule  (COMMA databaseDiscoveryRule)*
+    : ALTER DB_DISCOVERY RULE databaseDiscoveryRule (COMMA databaseDiscoveryRule)*
     ;
 
 dropDatabaseDiscoveryRule
-    : DROP DB_DISCOVERY RULE ruleName (COMMA ruleName)*
+    : DROP DB_DISCOVERY RULE existClause? ruleName (COMMA ruleName)*
     ;
 
 createDatabaseDiscoveryType
     : CREATE DB_DISCOVERY TYPE databaseDiscoveryTypeDefinition (COMMA databaseDiscoveryTypeDefinition)*
+    ;
+
+alterDatabaseDiscoveryType
+    : ALTER DB_DISCOVERY TYPE databaseDiscoveryTypeDefinition (COMMA databaseDiscoveryTypeDefinition)*
+    ;
+
+dropDatabaseDiscoveryType
+    : DROP DB_DISCOVERY TYPE existClause? discoveryTypeName (COMMA discoveryTypeName)*
+    ;
+
+createDatabaseDiscoveryHeartbeat
+    : CREATE DB_DISCOVERY HEARTBEAT heartbeatDefinition (COMMA heartbeatDefinition)*
+    ;
+
+alterDatabaseDiscoveryHeartbeat
+    : ALTER DB_DISCOVERY HEARTBEAT heartbeatDefinition (COMMA heartbeatDefinition)*
+    ;
+
+dropDatabaseDiscoveryHeartbeat
+    : DROP DB_DISCOVERY HEARTBEAT existClause? discoveryHeartbeatName (COMMA discoveryHeartbeatName)*
     ;
 
 databaseDiscoveryRule
@@ -51,6 +71,10 @@ databaseDiscoveryTypeDefinition
     : discoveryTypeName LP typeDefinition RP
     ;
 
+heartbeatDefinition
+    : discoveryHeartbeatName LP PROPERTIES LP properties RP RP  
+    ;
+
 ruleName
     : IDENTIFIER
     ;
@@ -64,29 +88,29 @@ resourceName
     ;
 
 typeDefinition
-    : TYPE LP NAME EQ typeName (COMMA PROPERTIES LP typeProperties RP)? RP
+    : TYPE LP NAME EQ discoveryTypeName (COMMA PROPERTIES LP properties RP)? RP
     ;
 
 discoveryHeartbeat
-    : HEARTBEAT LP PROPERTIES LP typeProperties RP RP
+    : HEARTBEAT LP PROPERTIES LP properties RP RP
     ;
 
-typeName
-    : IDENTIFIER
+properties
+    : property (COMMA property)*
     ;
 
-typeProperties
-    : typeProperty (COMMA typeProperty)*
-    ;
-
-typeProperty
+property
     : key=(IDENTIFIER | STRING) EQ value=(NUMBER | INT | STRING)
     ;
 
 discoveryTypeName
-    : IDENTIFIER
+    : IDENTIFIER | STRING
     ;
-    
+
 discoveryHeartbeatName
     : IDENTIFIER
+    ;
+
+existClause
+    : IF EXISTS
     ;

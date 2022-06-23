@@ -111,28 +111,28 @@ public abstract class ShardingDMLStatementValidator<T extends SQLStatement> impl
      * 
      * @param sqlStatementContext SQL statement context
      * @param shardingRule shardingRule
+     * @param assignments assignments
      * @param parameters parameter collection
      * @return sharding conditions
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     protected Optional<ShardingConditions> createShardingConditions(final SQLStatementContext<?> sqlStatementContext, final ShardingRule shardingRule,
                                                                     final Collection<AssignmentSegment> assignments, final List<Object> parameters) {
-        List<ShardingConditionValue> values = new LinkedList<>();
+        Collection<ShardingConditionValue> values = new LinkedList<>();
         String tableName = sqlStatementContext.getTablesContext().getTableNames().iterator().next();
         for (AssignmentSegment each : assignments) {
             String shardingColumn = each.getColumns().get(0).getIdentifier().getValue();
-            if (shardingRule.isShardingColumn(shardingColumn, tableName)) {
+            if (shardingRule.findShardingColumn(shardingColumn, tableName).isPresent()) {
                 Optional<Object> assignmentValue = getShardingColumnAssignmentValue(each, parameters);
                 assignmentValue.ifPresent(optional -> values.add(new ListShardingConditionValue(shardingColumn, tableName, Collections.singletonList(optional))));
             }
         }
-        ShardingConditions result = null;
-        if (!values.isEmpty()) {
-            ShardingCondition shardingCondition = new ShardingCondition();
-            shardingCondition.getValues().addAll(values);
-            result = new ShardingConditions(Collections.singletonList(shardingCondition), sqlStatementContext, shardingRule);
+        if (values.isEmpty()) {
+            return Optional.empty();
         }
-        return Optional.ofNullable(result);
+        ShardingCondition shardingCondition = new ShardingCondition();
+        shardingCondition.getValues().addAll(values);
+        return Optional.of(new ShardingConditions(Collections.singletonList(shardingCondition), sqlStatementContext, shardingRule));
     }
     
     private Optional<Object> getShardingColumnAssignmentValue(final AssignmentSegment assignmentSegment, final List<Object> parameters) {

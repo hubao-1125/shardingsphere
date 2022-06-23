@@ -134,7 +134,7 @@ try (HintManager hintManager = HintManager.getInstance();
 
 ##### Terms of Use
 
-To use SQL Hint function, users need to set `sql-comment-parse-enabled` to `true`.
+To use SQL Hint function, users need to set `sqlCommentParseEnabled` to `true`.
 The comment format only supports `/* */` for now. The content needs to start with `ShardingSphere hint:`, and the attribute name needs to be `writeRouteOnly`.
 
 ##### Codes:
@@ -174,8 +174,9 @@ try (HintManager hintManager = HintManager.getInstance();
 
 ##### Terms of Use
 
-To use SQL Hint function, users need to set `sql-comment-parse-enabled` to `true`. Currently, only support routing to one data source.
+To use SQL Hint function, users need to set `sqlCommentParseEnabled` to `true`. Currently, only support routing to one data source.
 The comment format only supports `/* */` for now. The content needs to start with `ShardingSphere hint:`, and the attribute name needs to be `dataSourceName`.
+Client connections using `MySQL` need to add the `-c` option to preserve comments, because the client defaults to `--skip-comments` to filter comments.
 
 ##### Codes:
 ```sql

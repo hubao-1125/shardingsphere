@@ -17,9 +17,8 @@
 
 package org.apache.shardingsphere.transaction.xa.jta.datasource;
 
-import com.microsoft.sqlserver.jdbc.SQLServerXADataSource;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypeRegistry;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +30,7 @@ import org.postgresql.xa.PGXADataSource;
 import javax.sql.XADataSource;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -42,26 +42,26 @@ public final class XADataSourceFactoryTest {
     
     @Test
     public void assertCreateH2XADataSource() {
-        XADataSource xaDataSource = XADataSourceFactory.build(DatabaseTypeRegistry.getActualDatabaseType("H2"), dataSource);
+        XADataSource xaDataSource = XADataSourceFactory.build(DatabaseTypeFactory.getInstance("H2"), dataSource);
         assertThat(xaDataSource, instanceOf(JdbcDataSource.class));
     }
-
+    
     @Test
     public void assertCreateMariaDBXADataSource() {
-        XADataSource xaDataSource = XADataSourceFactory.build(DatabaseTypeRegistry.getActualDatabaseType("MariaDB"), dataSource);
+        XADataSource xaDataSource = XADataSourceFactory.build(DatabaseTypeFactory.getInstance("MariaDB"), dataSource);
         assertThat(xaDataSource, instanceOf(MariaDbDataSource.class));
     }
-
+    
     @Test
     public void assertCreatePGXADataSource() {
         when(dataSource.getJdbcUrl()).thenReturn("jdbc:postgresql://localhost:5432/db1");
-        XADataSource xaDataSource = XADataSourceFactory.build(DatabaseTypeRegistry.getActualDatabaseType("PostgreSQL"), dataSource);
+        XADataSource xaDataSource = XADataSourceFactory.build(DatabaseTypeFactory.getInstance("PostgreSQL"), dataSource);
         assertThat(xaDataSource, instanceOf(PGXADataSource.class));
     }
     
     @Test
     public void assertCreateMSXADataSource() {
-        XADataSource xaDataSource = XADataSourceFactory.build(DatabaseTypeRegistry.getActualDatabaseType("SQLServer"), dataSource);
-        assertThat(xaDataSource, instanceOf(SQLServerXADataSource.class));
+        XADataSource xaDataSource = XADataSourceFactory.build(DatabaseTypeFactory.getInstance("SQLServer"), dataSource);
+        assertThat(xaDataSource.getClass().getName(), is("com.microsoft.sqlserver.jdbc.SQLServerXADataSource"));
     }
 }

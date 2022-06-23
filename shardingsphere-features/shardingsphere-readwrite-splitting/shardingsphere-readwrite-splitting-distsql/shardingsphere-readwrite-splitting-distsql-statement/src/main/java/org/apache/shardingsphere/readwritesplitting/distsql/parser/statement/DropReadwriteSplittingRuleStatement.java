@@ -31,4 +31,9 @@ import java.util.Collection;
 public final class DropReadwriteSplittingRuleStatement extends DropRuleStatement {
     
     private final Collection<String> ruleNames;
+    
+    public DropReadwriteSplittingRuleStatement(final boolean containsExistClause, final Collection<String> ruleNames) {
+        super(containsExistClause);
+        this.ruleNames = ruleNames;
+    }
 }

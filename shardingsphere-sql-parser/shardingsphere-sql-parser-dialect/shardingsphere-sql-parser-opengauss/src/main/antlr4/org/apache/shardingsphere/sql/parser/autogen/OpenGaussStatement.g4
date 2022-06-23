@@ -17,7 +17,7 @@
 
 grammar OpenGaussStatement;
 
-import Symbol, Comments, DMLStatement, DDLStatement, TCLStatement, DCLStatement, DALStatement, StoreProcedure;
+import Comments, TCLStatement, DCLStatement, DALStatement, StoreProcedure;
 
 execute
     : (select
@@ -36,7 +36,9 @@ execute
     | startTransaction
     | end
     | commit
+    | commitPrepared
     | rollback
+    | rollbackPrepared
     | abort
     | savepoint
     | releaseSavepoint
@@ -53,11 +55,19 @@ execute
     | set
     | resetParameter
     | call
+    | alterAggregate
     | alterFunction
     | alterDatabase
+    | alterDomain
+    | alterDefaultPrivileges
+    | alterForeignTable
+    | alterGroup
+    | alterMaterializedView
     | alterProcedure
     | alterServer
     | alterSequence
+    | alterView
+    | comment
     | createDatabase
     | createFunction
     | createProcedure
@@ -65,13 +75,23 @@ execute
     | createTrigger
     | createView
     | createSequence
+    | createDomain
+    | createRule
+    | createSchema
+    | alterSchema
+    | dropSchema
+    | createType
+    | dropType
+    | createTextSearch
     | dropDatabase
     | dropFunction
     | dropProcedure
+    | dropRule
     | dropServer
     | dropTrigger
     | dropView
     | dropSequence
+    | dropDomain
     | vacuum
     | prepare
     | executeStmt
@@ -84,5 +104,37 @@ execute
     | dropTablespace
     | setConstraints
     | copy
-    ) SEMI_?
+    | createLanguage
+    | alterLanguage
+    | dropLanguage
+    | createConversion
+    | alterConversion
+    | dropConversion
+    | alterTextSearchDictionary
+    | alterTextSearchTemplate
+    | alterTextSearchParser
+    | createExtension
+    | alterExtension
+    | dropExtension
+    | dropTextSearch
+    | createSynonym
+    | alterSynonym
+    | dropSynonym
+    | declare
+    | cursor
+    | close
+    | move
+    | fetch
+    | createDirectory
+    | alterDirectory
+    | dropDirectory
+    | createCast
+    | dropCast
+    | alterRule
+    | checkpoint
+    | alterType
+    | createPublication
+    | dropPublication
+    | createAggregate
+    ) SEMI_? EOF
     ;

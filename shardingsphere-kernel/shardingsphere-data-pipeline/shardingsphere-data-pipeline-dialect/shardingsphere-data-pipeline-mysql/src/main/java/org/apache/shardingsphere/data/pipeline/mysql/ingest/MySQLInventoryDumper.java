@@ -17,11 +17,12 @@
 
 package org.apache.shardingsphere.data.pipeline.mysql.ingest;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.shardingsphere.data.pipeline.core.datasource.DataSourceManager;
-import org.apache.shardingsphere.data.pipeline.core.ingest.config.InventoryDumperConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.config.ingest.InventoryDumperConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.ingest.channel.PipelineChannel;
 import org.apache.shardingsphere.data.pipeline.core.ingest.dumper.AbstractInventoryDumper;
+import org.apache.shardingsphere.data.pipeline.core.metadata.loader.PipelineTableMetaDataLoader;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,14 +34,19 @@ import java.sql.Types;
  */
 public final class MySQLInventoryDumper extends AbstractInventoryDumper {
     
-    public MySQLInventoryDumper(final InventoryDumperConfiguration inventoryDumperConfig, final DataSourceManager dataSourceManager) {
-        super(inventoryDumperConfig, dataSourceManager);
-        inventoryDumperConfig.getDataSourceConfig().appendJDBCParameters(ImmutableMap.<String, String>builder().put("yearIsDateType", "false").build());
+    private static final String YEAR_DATA_TYPE = "YEAR";
+    
+    public MySQLInventoryDumper(final InventoryDumperConfiguration inventoryDumperConfig, final PipelineChannel channel,
+                                final DataSource dataSource, final PipelineTableMetaDataLoader metaDataLoader) {
+        super(inventoryDumperConfig, channel, dataSource, metaDataLoader);
     }
     
     @Override
     public Object readValue(final ResultSet resultSet, final int index) throws SQLException {
-        if (isDateTimeValue(resultSet.getMetaData().getColumnType(index))) {
+        if (isYearDataType(resultSet.getMetaData().getColumnTypeName(index))) {
+            Object result = resultSet.getObject(index);
+            return resultSet.wasNull() ? null : result;
+        } else if (isDateTimeValue(resultSet.getMetaData().getColumnType(index))) {
             return resultSet.getString(index);
         } else {
             return resultSet.getObject(index);
@@ -49,6 +55,10 @@ public final class MySQLInventoryDumper extends AbstractInventoryDumper {
     
     private boolean isDateTimeValue(final int columnType) {
         return Types.TIME == columnType || Types.DATE == columnType || Types.TIMESTAMP == columnType;
+    }
+    
+    private boolean isYearDataType(final String columnDataTypeName) {
+        return YEAR_DATA_TYPE.equalsIgnoreCase(columnDataTypeName);
     }
     
     @Override

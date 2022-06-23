@@ -15,14 +15,13 @@
 # limitations under the License.
 #
 
-schemaName: logic_db
+databaseName: logic_db
 
 props:
   sql-show: true
 
 rules:
 - !SHADOW
-  enable: true
   dataSources:
     shadowDataSource0:
       sourceDataSourceName: shadow_jdbc_0

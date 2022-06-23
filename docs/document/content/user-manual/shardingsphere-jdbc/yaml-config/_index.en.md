@@ -25,15 +25,14 @@ YAML configuration is the most common configuration mode, which can omit the com
 
 ### YAML Format
 
-ShardingSphere-JDBC YAML file consists of schema name, mode configuration, data source map, rule configurations and properties.
+ShardingSphere-JDBC YAML file consists of database name, mode configuration, data source map, rule configurations and properties.
 
 Note: The example connection pool is HikariCP, which can be replaced with other connection pools according to business scenarios.
 
 ```yaml
-# Alias of the datasource in JDBC.
-# Through this parameter to connect, ShardingSphere-JDBC and ShardingSphere-Proxy.
+# JDBC logic database name. Through this parameter to connect ShardingSphere-JDBC and ShardingSphere-Proxy.
 # Default value: logic_db
-schemaName (?):
+databaseName (?):
 
 mode:
 
@@ -50,11 +49,11 @@ props:
   key_2: value_2
 ```
 
-Please refer to [Mode Confiugration](/en/user-manual/shardingsphere-jdbc/yaml/mode) for more mode details.
+Please refer to [Mode Confiugration](/en/user-manual/shardingsphere-jdbc/yaml-config/mode) for more mode details.
 
-Please refer to [Data Source Confiugration](/en/user-manual/shardingsphere-jdbc/yaml/data-source) for more data source details.
+Please refer to [Data Source Confiugration](/en/user-manual/shardingsphere-jdbc/yaml-config/data-source) for more data source details.
 
-Please refer to [Rules Confiugration](/en/user-manual/shardingsphere-jdbc/yaml/rules) for more rule details.
+Please refer to [Rules Confiugration](/en/user-manual/shardingsphere-jdbc/yaml-config/rules) for more rule details.
 
 ### Create Data Source
 

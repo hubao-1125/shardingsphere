@@ -20,9 +20,9 @@ package org.apache.shardingsphere.example.shadow.raw.jdbc.config;
 import org.apache.shardingsphere.example.config.ExampleConfiguration;
 import org.apache.shardingsphere.example.core.api.DataSourceUtil;
 import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
+import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.parser.config.SQLParserRuleConfiguration;
-import org.apache.shardingsphere.parser.rule.builder.DefaultSQLParserRuleConfigurationBuilder;
+import org.apache.shardingsphere.sql.parser.api.CacheOption;
 
 import javax.sql.DataSource;
 import java.util.Collection;
@@ -35,19 +35,21 @@ public abstract class BaseShadowConfiguration implements ExampleConfiguration {
     
     protected Map<String, DataSource> createDataSourceMap() {
         Map<String, DataSource> result = new LinkedHashMap<>();
-        result.put("ds", DataSourceUtil.createDataSource("ds"));
-        result.put("shadow-ds", DataSourceUtil.createDataSource("ds_shadow"));
+        result.put("ds", DataSourceUtil.createDataSource("demo_ds"));
+        result.put("ds_shadow", DataSourceUtil.createDataSource("shadow_demo_ds"));
         return result;
     }
     
     protected Properties createShardingSphereProps() {
         Properties result = new Properties();
-        result.setProperty(ConfigurationPropertyKey.SQL_SHOW.getKey(), "true");
+        result.setProperty(ConfigurationPropertyKey.SQL_SHOW.getKey(), Boolean.TRUE.toString());
         return result;
     }
     
     protected SQLParserRuleConfiguration createSQLParserRuleConfiguration() {
-        return new DefaultSQLParserRuleConfigurationBuilder().build();
+        CacheOption parseTreeCacheOption = new CacheOption(128, 1024L);
+        CacheOption sqlStatementCacheOption = new CacheOption(2000, 65535L);
+        return new SQLParserRuleConfiguration(true, parseTreeCacheOption, sqlStatementCacheOption);
     }
     
     protected Collection<String> createShadowAlgorithmNames() {
@@ -77,7 +79,7 @@ public abstract class BaseShadowConfiguration implements ExampleConfiguration {
         userIdSelectProps.setProperty("value", "1");
         result.put("user-id-select-match-algorithm", new ShardingSphereAlgorithmConfiguration("VALUE_MATCH", userIdSelectProps));
         Properties noteAlgorithmProps = new Properties();
-        noteAlgorithmProps.setProperty("shadow", "true");
+        noteAlgorithmProps.setProperty("shadow", Boolean.TRUE.toString());
         noteAlgorithmProps.setProperty("foo", "bar");
         result.put("simple-hint-algorithm", new ShardingSphereAlgorithmConfiguration("SIMPLE_HINT", noteAlgorithmProps));
         return result;

@@ -17,7 +17,7 @@
 
 grammar DMLStatement;
 
-import Symbol, Keyword, OracleKeyword, Literals, BaseRule, Comments, DDLStatement;
+import Comments, DDLStatement;
 
 insert
     : INSERT hint? (insertSingleTable | insertMultiTable)
@@ -136,10 +136,10 @@ select
     ;
 
 selectSubquery
-    : (queryBlock | selectUnionClause | parenthesisSelectSubquery) orderByClause? rowLimitingClause
+    : (queryBlock | selectCombineClause | parenthesisSelectSubquery) orderByClause? rowLimitingClause
     ;
 
-selectUnionClause
+selectCombineClause
     : ((queryBlock | parenthesisSelectSubquery) orderByClause? rowLimitingClause) ((UNION ALL? | INTERSECT | MINUS) selectSubquery)+
     ;
 

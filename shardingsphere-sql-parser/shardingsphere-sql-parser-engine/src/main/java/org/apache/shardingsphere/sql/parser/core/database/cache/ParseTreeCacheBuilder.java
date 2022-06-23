@@ -17,12 +17,12 @@
 
 package org.apache.shardingsphere.sql.parser.core.database.cache;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.sql.parser.api.CacheOption;
-import org.apache.shardingsphere.sql.parser.core.ParseContext;
+import org.apache.shardingsphere.sql.parser.core.ParseASTNode;
 
 /**
  * Parse tree cache builder.
@@ -32,15 +32,13 @@ public final class ParseTreeCacheBuilder {
     
     /**
      * Build parse tree cache.
-     * 
+     *
      * @param option cache option
      * @param databaseType database type
-     * @param sqlCommentParseEnabled sql comment parse enabled
      * @return built parse tree cache
      */
-    public static LoadingCache<String, ParseContext> build(final CacheOption option, final String databaseType, final boolean sqlCommentParseEnabled) {
-        return CacheBuilder.newBuilder().softValues()
-                .initialCapacity(option.getInitialCapacity()).maximumSize(option.getMaximumSize()).concurrencyLevel(option.getConcurrencyLevel())
-                .build(new ParseTreeCacheLoader(databaseType, sqlCommentParseEnabled));
+    public static LoadingCache<String, ParseASTNode> build(final CacheOption option, final String databaseType) {
+        return Caffeine.newBuilder().softValues().initialCapacity(option.getInitialCapacity()).maximumSize(option.getMaximumSize())
+                .build(new ParseTreeCacheLoader(databaseType));
     }
 }

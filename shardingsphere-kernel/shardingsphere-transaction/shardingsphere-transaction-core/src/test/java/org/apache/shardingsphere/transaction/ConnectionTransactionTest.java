@@ -17,38 +17,70 @@
 
 package org.apache.shardingsphere.transaction;
 
-import org.apache.shardingsphere.infra.database.DefaultSchema;
+import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.transaction.ConnectionTransaction.DistributedTransactionOperationType;
 import org.apache.shardingsphere.transaction.config.TransactionRuleConfiguration;
-import org.apache.shardingsphere.transaction.context.TransactionContexts;
 import org.apache.shardingsphere.transaction.rule.TransactionRule;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.Map;
+import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public final class ConnectionTransactionTest {
     
     private ConnectionTransaction connectionTransaction;
     
-    @Before
-    public void init() {
-        Map<String, ShardingSphereTransactionManagerEngine> actualEngines = Collections.singletonMap(DefaultSchema.LOGIC_NAME, new ShardingSphereTransactionManagerEngine());
-        TransactionContexts transactionContexts = new TransactionContexts(actualEngines);
-        connectionTransaction = new ConnectionTransaction(
-                DefaultSchema.LOGIC_NAME,
-                new TransactionRule(new TransactionRuleConfiguration("XA", "Atomikos")),
-                transactionContexts
-        );
+    @Test
+    public void assertDistributedTransactionOperationTypeCommit() {
+        connectionTransaction = new ConnectionTransaction(DefaultDatabase.LOGIC_NAME, getXATransactionRule());
+        DistributedTransactionOperationType operationType = connectionTransaction.getDistributedTransactionOperationType(true);
+        assertThat(operationType, is(DistributedTransactionOperationType.COMMIT));
     }
     
     @Test
     public void assertDistributedTransactionOperationTypeIgnore() {
+        connectionTransaction = new ConnectionTransaction(DefaultDatabase.LOGIC_NAME, getXATransactionRule());
         DistributedTransactionOperationType operationType = connectionTransaction.getDistributedTransactionOperationType(false);
         assertThat(operationType, is(DistributedTransactionOperationType.IGNORE));
+    }
+    
+    @Test
+    public void assertIsLocalTransaction() {
+        connectionTransaction = new ConnectionTransaction(DefaultDatabase.LOGIC_NAME, getLocalTransactionRule());
+        assertTrue(connectionTransaction.isLocalTransaction());
+        connectionTransaction = new ConnectionTransaction(DefaultDatabase.LOGIC_NAME, getXATransactionRule());
+        assertFalse(connectionTransaction.isLocalTransaction());
+    }
+    
+    @Test
+    public void assertIsHoldTransaction() {
+        connectionTransaction = new ConnectionTransaction(DefaultDatabase.LOGIC_NAME, getLocalTransactionRule());
+        assertTrue(connectionTransaction.isHoldTransaction(false));
+        connectionTransaction = new ConnectionTransaction(DefaultDatabase.LOGIC_NAME, getXATransactionRule());
+        assertTrue(connectionTransaction.isInTransaction());
+        assertTrue(connectionTransaction.isHoldTransaction(true));
+        connectionTransaction = new ConnectionTransaction(DefaultDatabase.LOGIC_NAME, getLocalTransactionRule());
+        assertFalse(connectionTransaction.isHoldTransaction(true));
+    }
+    
+    private TransactionRule getLocalTransactionRule() {
+        TransactionRule result = new TransactionRule(new TransactionRuleConfiguration("LOCAL", null, new Properties()), Collections.emptyMap());
+        result.setInstanceContext(mock(InstanceContext.class));
+        result.getResources().put(DefaultDatabase.LOGIC_NAME, new ShardingSphereTransactionManagerEngine());
+        return result;
+    }
+    
+    private TransactionRule getXATransactionRule() {
+        TransactionRule result = new TransactionRule(new TransactionRuleConfiguration("XA", "Atomikos", new Properties()), Collections.emptyMap());
+        result.setInstanceContext(mock(InstanceContext.class));
+        result.getResources().put(DefaultDatabase.LOGIC_NAME, new ShardingSphereTransactionManagerEngine());
+        return result;
     }
 }

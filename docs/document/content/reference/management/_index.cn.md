@@ -6,31 +6,49 @@ weight = 1
 
 ## 注册中心数据结构
 
-在定义的命名空间下，`rules` 、`props` 和 `metadata` 节点以 YAML 格式存储配置，可通过修改节点来实现对于配置的动态管理。`status` 存储数据库访问对象运行节点，用于区分不同数据库访问实例。
+在定义的命名空间下，`rules` 、`props` 和 `metadata` 节点以 YAML 格式存储配置，可通过修改节点来实现对于配置的动态管理。`nodes` 存储数据库访问对象运行节点，用于区分不同数据库访问实例。
 
 ```
 namespace
-   ├──rules                                     # 全局规则配置
-   ├──props                                     # 属性配置
-   ├──metadata                                  # Metadata 配置
-   ├      ├──${schema_1}                        # Schema 名称1
-   ├      ├      ├──dataSources                 # 数据源配置
-   ├      ├      ├──rules                       # 规则配置
-   ├      ├      ├──schema                      # 表结构配置
-   ├      ├──${schema_2}                        # Schema 名称2
-   ├      ├      ├──dataSources                 # 数据源配置
-   ├      ├      ├──rules                       # 规则配置
-   ├      ├      ├──schema                      # 表结构配置
-   ├──status
+   ├──rules                                   # 全局规则配置
+   ├──props                                   # 属性配置
+   ├──metadata                                # Metadata 配置
+   ├     ├──${databaseName}                   # 逻辑数据库名称
+   ├     ├     ├──schemas                     # Schema 列表   
+   ├     ├     ├     ├──${schemaName}         # 逻辑 Schema 名称
+   ├     ├     ├     ├     ├──tables          # 表结构配置
+   ├     ├     ├     ├     ├     ├──${tableName} 
+   ├     ├     ├     ├     ├     ├──...  
+   ├     ├     ├     ├──...    
+   ├     ├     ├──versions                    # 元数据版本列表      
+   ├     ├     ├     ├──${versionNumber}      # 元数据版本号
+   ├     ├     ├     ├     ├──dataSources     # 数据源配置
+   ├     ├     ├     ├     ├──rules           # 规则配置   
+   ├     ├     ├     ├──...
+   ├     ├     ├──active_version              # 激活的元数据版本号
+   ├     ├──...      
+   ├──nodes
    ├    ├──compute_nodes
    ├    ├     ├──online
-   ├    ├     ├     ├──${your_instance_ip_a}@${your_instance_port_x}
-   ├    ├     ├     ├──${your_instance_ip_b}@${your_instance_port_y}
+   ├    ├     ├     ├──proxy
+   ├    ├     ├     ├     ├──UUID             # Proxy 实例唯一标识
+   ├    ├     ├     ├     ├──....
+   ├    ├     ├     ├──jdbc
+   ├    ├     ├     ├     ├──UUID             # JDBC 实例唯一标识
+   ├    ├     ├     ├     ├──....   
+   ├    ├     ├──status
+   ├    ├     ├     ├──UUID
    ├    ├     ├     ├──....
-   ├    ├     ├──circuit_breaker
-   ├    ├     ├     ├──${your_instance_ip_c}@${your_instance_port_v}
-   ├    ├     ├     ├──${your_instance_ip_d}@${your_instance_port_w}
+   ├    ├     ├──xa_recovery_id
+   ├    ├     ├     ├──recovery_id
+   ├    ├     ├     ├     ├──UUID     
    ├    ├     ├     ├──....
+   ├    ├     ├──worker_id
+   ├    ├     ├     ├──UUID
+   ├    ├     ├     ├──....
+   ├    ├     ├──process_trigger
+   ├    ├     ├     ├──process_list_id:UUID
+   ├    ├     ├     ├──....            
    ├    ├──storage_nodes
    ├    ├     ├──disable
    ├    ├     ├      ├──${schema_1.ds_0}
@@ -52,7 +70,7 @@ users:
   - root@%:root
   - sharding@127.0.0.1:sharding
 provider:
-  type: ALL_PRIVILEGES_PERMITTED
+  type: ALL_PERMITTED
 ```
 
 ### /props
@@ -64,9 +82,9 @@ kernel-executor-size: 20
 sql-show: true
 ```
 
-### /metadata/${schemaName}/dataSources
+### /metadata/${databaseName}/versions/${versionNumber}/dataSources
 
-多个数据库连接池的集合，不同数据库连接池属性自适配（例如：DBCP，C3P0，Druid, HikariCP）。
+多个数据库连接池的集合，不同数据库连接池属性自适配（例如：DBCP，C3P0，Druid，HikariCP）。
 
 ```yaml
 ds_0:
@@ -99,7 +117,7 @@ ds_1:
   poolName: HikariPool-2
 ```
 
-### /metadata/${schemaName}/rules
+### /metadata/${databaseName}/versions/${versionNumber}/rules
 
 规则配置，可包括数据分片、读写分离、数据加密、影子库压测等配置。
 
@@ -114,46 +132,37 @@ ds_1:
   xxx
 ```
 
-### /metadata/${schemaName}/schema
+### /metadata/${databaseName}/schemas/${schemaName}/tables
 
-表结构配置，暂不支持动态修改。
+表结构配置，每个表使用单独节点存储，暂不支持动态修改。
 
 ```yaml
-tables:                                       # 表
-  t_order:                                    # 表名
-    columns:                                  # 列
-      id:                                     # 列名
-        caseSensitive: false
-        dataType: 0
-        generated: false
-        name: id
-        primaryKey: trues
-      order_id:
-        caseSensitive: false
-        dataType: 0
-        generated: false
-        name: order_id
-        primaryKey: false
-    indexs:                                   # 索引
-      t_user_order_id_index:                  # 索引名
-        name: t_user_order_id_index
-  t_order_item:
-    columns:
-      order_id:
-        caseSensitive: false
-        dataType: 0
-        generated: false
-        name: order_id
-        primaryKey: false
+name: t_order                             # 表名
+columns:                                  # 列
+  id:                                     # 列名
+    caseSensitive: false
+    dataType: 0
+    generated: false
+    name: id
+    primaryKey: trues
+  order_id:
+    caseSensitive: false
+    dataType: 0
+    generated: false
+    name: order_id
+    primaryKey: false
+indexs:                                   # 索引
+  t_user_order_id_index:                  # 索引名
+    name: t_user_order_id_index
 ```
 
-### /status/compute_nodes
+### /nodes/compute_nodes
 
 数据库访问对象运行实例信息，子节点是当前运行实例的标识。
-运行实例标识由运行服务器的 IP 地址和 PORT 构成。
+运行实例标识使用 UUID 生成，每次启动重新生成。
 运行实例标识均为临时节点，当实例上线时注册，下线时自动清理。
 注册中心监控这些节点的变化来治理运行中实例对数据库的访问等。
 
-### /status/storage_nodes
+### /nodes/storage_nodes
 
 可以治理读写分离从库，可动态添加删除以及禁用。

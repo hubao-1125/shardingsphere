@@ -19,6 +19,10 @@ package org.apache.shardingsphere.driver.jdbc.unsupported;
 
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
 import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSphereStatement;
+import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.traffic.rule.TrafficRule;
+import org.apache.shardingsphere.traffic.rule.builder.DefaultTrafficRuleConfigurationBuilder;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.sql.SQLException;
@@ -26,10 +30,21 @@ import java.sql.SQLFeatureNotSupportedException;
 
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public final class UnsupportedOperationStatementTest {
     
-    private final ShardingSphereStatement shardingSphereStatement = new ShardingSphereStatement(mock(ShardingSphereConnection.class, RETURNS_DEEP_STUBS));
+    private ShardingSphereStatement shardingSphereStatement;
+    
+    @Before
+    public void setUp() {
+        ShardingSphereConnection connection = mock(ShardingSphereConnection.class, RETURNS_DEEP_STUBS);
+        ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
+        TrafficRule trafficRule = new TrafficRule(new DefaultTrafficRuleConfigurationBuilder().build());
+        when(connection.getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
+        when(globalRuleMetaData.getSingleRule(TrafficRule.class)).thenReturn(trafficRule);
+        shardingSphereStatement = new ShardingSphereStatement(connection);
+    }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertAddBatch() throws SQLException {

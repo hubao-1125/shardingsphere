@@ -17,23 +17,25 @@
 
 package org.apache.shardingsphere.readwritesplitting.rule.builder;
 
+import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.infra.rule.builder.schema.SchemaRulesBuilderMaterials;
-import org.apache.shardingsphere.infra.rule.builder.schema.SchemaRuleBuilder;
+import org.apache.shardingsphere.infra.rule.builder.schema.DatabaseRuleBuilder;
 import org.apache.shardingsphere.readwritesplitting.algorithm.config.AlgorithmProvidedReadwriteSplittingRuleConfiguration;
 import org.apache.shardingsphere.readwritesplitting.constant.ReadwriteSplittingOrder;
 import org.apache.shardingsphere.readwritesplitting.rule.ReadwriteSplittingRule;
 
+import javax.sql.DataSource;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Algorithm provided readwrite-splitting rule builder.
  */
-public final class AlgorithmProvidedReadwriteSplittingRuleBuilder implements SchemaRuleBuilder<AlgorithmProvidedReadwriteSplittingRuleConfiguration> {
+public final class AlgorithmProvidedReadwriteSplittingRuleBuilder implements DatabaseRuleBuilder<AlgorithmProvidedReadwriteSplittingRuleConfiguration> {
     
     @Override
-    public ReadwriteSplittingRule build(final SchemaRulesBuilderMaterials materials, final AlgorithmProvidedReadwriteSplittingRuleConfiguration config,
-                                        final Collection<ShardingSphereRule> builtRules) {
+    public ReadwriteSplittingRule build(final AlgorithmProvidedReadwriteSplittingRuleConfiguration config, final String databaseName,
+                                        final Map<String, DataSource> dataSources, final Collection<ShardingSphereRule> builtRules, final ConfigurationProperties props) {
         return new ReadwriteSplittingRule(config);
     }
     

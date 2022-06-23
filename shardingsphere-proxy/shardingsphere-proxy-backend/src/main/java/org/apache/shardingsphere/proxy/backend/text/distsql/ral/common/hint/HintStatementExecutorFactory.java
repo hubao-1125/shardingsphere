@@ -17,7 +17,6 @@
 
 package org.apache.shardingsphere.proxy.backend.text.distsql.ral.common.hint;
 
-import com.mchange.v1.db.sql.UnsupportedTypeException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.distsql.parser.statement.ral.common.HintDistSQLStatement;
@@ -57,7 +56,7 @@ public final class HintStatementExecutorFactory {
      * @return hint command executor
      * @throws SQLException SQL exception
      */
-    public static HintStatementExecutor newInstance(final HintDistSQLStatement sqlStatement, final ConnectionSession connectionSession) throws SQLException {
+    public static HintStatementExecutor<? extends HintDistSQLStatement> newInstance(final HintDistSQLStatement sqlStatement, final ConnectionSession connectionSession) throws SQLException {
         if (sqlStatement instanceof SetReadwriteSplittingHintStatement) {
             return new SetReadwriteSplittingHintExecutor((SetReadwriteSplittingHintStatement) sqlStatement);
         }
@@ -85,6 +84,6 @@ public final class HintStatementExecutorFactory {
         if (sqlStatement instanceof ClearShardingHintStatement) {
             return new ClearShardingHintExecutor();
         }
-        throw new UnsupportedTypeException(sqlStatement.getClass().getCanonicalName());
+        throw new UnsupportedOperationException(sqlStatement.getClass().getCanonicalName());
     }
 }

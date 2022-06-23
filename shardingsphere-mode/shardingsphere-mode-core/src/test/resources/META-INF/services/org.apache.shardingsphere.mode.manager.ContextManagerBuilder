@@ -15,5 +15,4 @@
 # limitations under the License.
 #
 
-org.apache.shardingsphere.mode.manager.fixture.FixtureContextManagerBuilder
-org.apache.shardingsphere.mode.manager.fixture.DefaultFixtureContextManagerBuilder
+org.apache.shardingsphere.mode.manager.fixture.ContextManagerBuilderFixture

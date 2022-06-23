@@ -17,13 +17,20 @@
 
 package org.apache.shardingsphere.proxy.backend.session;
 
+import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
+import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction.BackendTransactionManager;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction.JDBCBackendTransactionManager;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
+import org.apache.shardingsphere.proxy.backend.util.ProxyContextRestorer;
 import org.apache.shardingsphere.transaction.core.TransactionType;
+import org.apache.shardingsphere.transaction.rule.TransactionRule;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -33,10 +40,14 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public final class ConnectionSessionTest {
+public final class ConnectionSessionTest extends ProxyContextRestorer {
+    
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private ContextManager contextManager;
     
     @Mock
     private JDBCBackendConnection backendConnection;
@@ -45,31 +56,34 @@ public final class ConnectionSessionTest {
     
     @Before
     public void setup() {
-        connectionSession = new ConnectionSession(TransactionType.LOCAL, null);
-        connectionSession.setBackendConnection(backendConnection);
+        ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
+        when(contextManager.getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
+        when(globalRuleMetaData.getSingleRule(TransactionRule.class)).thenReturn(mock(TransactionRule.class));
+        ProxyContext.init(contextManager);
+        connectionSession = new ConnectionSession(mock(MySQLDatabaseType.class), TransactionType.LOCAL, null);
         when(backendConnection.getConnectionSession()).thenReturn(connectionSession);
     }
     
     @Test
     public void assertSetCurrentSchema() {
-        connectionSession.setCurrentSchema("currentSchema");
-        assertThat(connectionSession.getSchemaName(), is("currentSchema"));
+        connectionSession.setCurrentDatabase("currentDatabase");
+        assertThat(connectionSession.getDatabaseName(), is("currentDatabase"));
     }
     
     @Test(expected = ShardingSphereException.class)
     public void assertFailedSwitchTransactionTypeWhileBegin() throws SQLException {
-        connectionSession.setCurrentSchema("schema");
-        BackendTransactionManager transactionManager = new BackendTransactionManager(backendConnection);
+        connectionSession.setCurrentDatabase("db");
+        JDBCBackendTransactionManager transactionManager = new JDBCBackendTransactionManager(backendConnection);
         transactionManager.begin();
         connectionSession.getTransactionStatus().setTransactionType(TransactionType.XA);
     }
     
     @Test(expected = ShardingSphereException.class)
     public void assertFailedSwitchSchemaWhileBegin() throws SQLException {
-        connectionSession.setCurrentSchema("schema");
-        BackendTransactionManager transactionManager = new BackendTransactionManager(backendConnection);
+        connectionSession.setCurrentDatabase("db");
+        JDBCBackendTransactionManager transactionManager = new JDBCBackendTransactionManager(backendConnection);
         transactionManager.begin();
-        connectionSession.setCurrentSchema("newSchema");
+        connectionSession.setCurrentDatabase("newDB");
     }
     
     @Test

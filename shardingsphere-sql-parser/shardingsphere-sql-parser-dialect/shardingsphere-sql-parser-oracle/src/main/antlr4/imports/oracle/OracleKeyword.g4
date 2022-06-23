@@ -219,6 +219,10 @@ DIRECTORY
     : D I R E C T O R Y
     ;
 
+CREDENTIALS
+    : C R E D E N T I A L S
+    ;
+
 EDITION
     : E D I T I O N
     ;
@@ -241,6 +245,10 @@ EXCEPTIONS
 
 FORCE
     : F O R C E
+    ;
+
+NOFORCE
+    : N O F O R C E
     ;
 
 GLOBAL
@@ -611,6 +619,10 @@ SEGMENT
     : S E G M E N T
     ;
 
+RESTRICT
+    : R E S T R I C T
+    ;
+
 RESTRICTED
     : R E S T R I C T E D
     ;
@@ -927,6 +939,10 @@ REUSE
     : R E U S E
     ;
 
+SETTINGS
+    : S E T T I N G S
+    ;
+
 STORAGE
     : S T O R A G E
     ;
@@ -1221,6 +1237,10 @@ INCLUDING
 
 OVERFLOW
     : O V E R F L O W
+    ;
+
+ATTRIBUTE
+    : A T T R I B U T E
     ;
 
 ATTRIBUTES
@@ -1909,6 +1929,10 @@ MEMORY
 
 SPFILE
     : S P F I L E
+    ;
+
+PFILE
+    : P F I L E
     ;
 
 BOTH
@@ -2621,4 +2645,192 @@ SHARED
 
 AUTHENTICATED
     : A U T H E N T I C A T E D
+    ;
+
+CHILD
+    : C H I L D
+    ;
+
+DETERMINES
+    : D E T E R M I N E S
+    ;
+
+RELIES_ON
+    : R E L I E S UL_ O N
+    ;
+
+AGGREGATE
+    : A G G R E G A T E
+    ;
+
+POLYMORPHIC
+    : P O L Y M O R P H I C
+    ;
+
+SQL_MARCO
+    : S Q L UL_ M A R C O
+    ;
+
+LANGUAGE
+    : L A N G U A G E
+    ;
+
+AGENT
+    : A G E N T
+    ;
+
+SELF
+    : S E L F
+    ;
+
+TDO
+    : T D O
+    ;
+
+INDICATOR
+    : I N D I C A T O R
+    ;
+
+STRUCT
+    : S T R U C T
+    ;
+
+LENGTH
+    : L E N G T H
+    ;
+
+DURATION
+    : D U R A T I O N
+    ;
+
+MAXLEN
+    : M A X L E N
+    ;
+
+CHARSETID
+    : C H A R S E T I D
+    ;
+
+CHARSETFORM
+    : C H A R S E T F O R M
+    ;
+
+SINGLE_C
+    : C
+    ;
+
+SYSTIMESTAMP
+    : S Y S T I M E S T A M P
+    ;
+
+CATEGORY
+    : C A T E G O R Y
+    ;
+
+ORDER
+    : O R D E R
+    ;
+
+NOKEEP
+    : N O K E E P
+    ;
+
+SCALE
+    : S C A L E
+    ;
+
+NOSCALE
+    : N O S C A L E
+    ;
+
+EXTEND
+    : E X T E N D
+    ;
+
+NOEXTEND
+    : N O E X T E N D
+    ;
+
+NOSHARD
+    : N O S H A R D
+    ;
+
+INITIALIZED
+    : I N I T I A L I Z E D
+    ;
+
+EXTERNALLY
+    : E X T E R N A L L Y
+    ;
+
+GLOBALLY
+    : G L O B A L L Y
+    ;
+
+ACCESSED
+    : A C C E S S E D
+    ;
+
+RESTART
+    : R E S T A R T
+    ;
+
+OPTIMIZE
+    : O P T I M I Z E
+    ;
+
+QUOTA
+    : Q U O T A
+    ;
+
+DISKGROUP
+    : D I S K G R O U P
+    ;
+
+NORMAL
+    : N O R M A L
+    ;
+
+FLEX
+    : F L E X
+    ;
+
+SITE
+    : S I T E
+    ;
+
+QUORUM
+    : Q U O R U M
+    ;
+
+REGULAR
+    : R E G U L A R
+    ;
+
+FAILGROUP
+    : F A I L G R O U P
+    ;
+
+DISK
+    : D I S K
+    ;
+
+EXCLUDING
+    : E X C L U D I N G
+    ;
+
+CONTENTS
+    : C O N T E N T S
+    ;
+
+LOCKDOWN
+    : L O C K D O W N
+    ;
+
+CLEAN
+    : C L E A N
+    ;
+
+GUARANTEE
+    : G U A R A N T E E
     ;

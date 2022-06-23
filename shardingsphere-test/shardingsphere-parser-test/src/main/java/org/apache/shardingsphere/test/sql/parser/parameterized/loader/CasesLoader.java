@@ -70,7 +70,7 @@ public abstract class CasesLoader {
     /**
      * build case map.
      * @param caseMap result map
-     * @param inputStream xml inputStream 
+     * @param inputStream xml inputStream
      * @throws JAXBException JAXBException
      */
     protected abstract void buildCaseMap(Map<String, Case> caseMap, InputStream inputStream) throws JAXBException;
@@ -89,9 +89,10 @@ public abstract class CasesLoader {
      * @param sqlCaseId case ID
      * @param sqlCaseType SQL case type
      * @param parameters SQL parameters
+     * @param databaseType databaseType
      * @return SQL
      */
-    public abstract String getCaseValue(String sqlCaseId, SQLCaseType sqlCaseType, List<?> parameters);
+    public abstract String getCaseValue(String sqlCaseId, SQLCaseType sqlCaseType, List<?> parameters, String databaseType);
     
     /**
      * Get all SQL case IDs.

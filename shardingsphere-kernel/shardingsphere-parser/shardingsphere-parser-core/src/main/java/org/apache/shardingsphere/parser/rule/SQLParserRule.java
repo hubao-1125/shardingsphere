@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.parser.rule;
 
 import lombok.Getter;
+import org.apache.shardingsphere.infra.parser.ShardingSphereSQLParserEngine;
 import org.apache.shardingsphere.infra.rule.identifier.scope.GlobalRule;
 import org.apache.shardingsphere.parser.config.SQLParserRuleConfiguration;
 import org.apache.shardingsphere.sql.parser.api.CacheOption;
@@ -27,17 +28,30 @@ import org.apache.shardingsphere.sql.parser.api.CacheOption;
  */
 @Getter
 public final class SQLParserRule implements GlobalRule {
-
+    
+    private final SQLParserRuleConfiguration configuration;
+    
     private final boolean sqlCommentParseEnabled;
-
+    
     private final CacheOption sqlStatementCache;
-
-    private final CacheOption parserTreeCache;
+    
+    private final CacheOption parseTreeCache;
     
     public SQLParserRule(final SQLParserRuleConfiguration ruleConfig) {
-        this.sqlCommentParseEnabled = ruleConfig.isSqlCommentParseEnabled();
-        this.sqlStatementCache = ruleConfig.getSqlStatementCacheOption();
-        this.parserTreeCache = ruleConfig.getParseTreeCacheOption();
+        configuration = ruleConfig;
+        sqlCommentParseEnabled = ruleConfig.isSqlCommentParseEnabled();
+        sqlStatementCache = ruleConfig.getSqlStatementCache();
+        parseTreeCache = ruleConfig.getParseTreeCache();
+    }
+    
+    /**
+     * Get SQL parser engine.
+     * 
+     * @param databaseType database type
+     * @return SQL parser engine
+     */
+    public ShardingSphereSQLParserEngine getSQLParserEngine(final String databaseType) {
+        return new ShardingSphereSQLParserEngine(databaseType, sqlStatementCache, parseTreeCache, sqlCommentParseEnabled);
     }
     
     @Override

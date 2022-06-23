@@ -48,11 +48,11 @@ public final class ShadowRuleStatementConverter {
      * @return shadow rule configuration
      */
     public static ShadowRuleConfiguration convert(final Collection<ShadowRuleSegment> rules) {
-        ShadowRuleConfiguration shadowRuleConfiguration = new ShadowRuleConfiguration();
-        shadowRuleConfiguration.setShadowAlgorithms(getShadowAlgorithms(rules));
-        shadowRuleConfiguration.setDataSources(getDataSource(rules));
-        shadowRuleConfiguration.setTables(getTables(rules));
-        return shadowRuleConfiguration;
+        ShadowRuleConfiguration result = new ShadowRuleConfiguration();
+        result.setShadowAlgorithms(getShadowAlgorithms(rules));
+        result.setDataSources(getDataSource(rules));
+        result.setTables(getTables(rules));
+        return result;
     }
     
     private static Map<String, ShadowTableConfiguration> getTables(final Collection<ShadowRuleSegment> rules) {
@@ -66,7 +66,7 @@ public final class ShadowRuleStatementConverter {
     }
     
     private static ShadowTableConfiguration buildShadowTableConfiguration(final String ruleName, final Entry<String, Collection<ShadowAlgorithmSegment>> entry) {
-        return new ShadowTableConfiguration(new ArrayList<>(Collections.singletonList(ruleName)), entry.getValue().stream().map(ShadowAlgorithmSegment::getAlgorithmName).collect(Collectors.toList()));
+        return new ShadowTableConfiguration(new ArrayList<>(Collections.singleton(ruleName)), entry.getValue().stream().map(ShadowAlgorithmSegment::getAlgorithmName).collect(Collectors.toList()));
     }
     
     private static Map<String, ShadowDataSourceConfiguration> getDataSource(final Collection<ShadowRuleSegment> rules) {
