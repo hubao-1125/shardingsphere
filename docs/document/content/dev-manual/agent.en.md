@@ -1,37 +1,24 @@
 +++
-pre = "<b>6.15. </b>"
+pre = "<b>5.14. </b>"
 title = "Observability"
-weight = 15
+weight = 14
 chapter = true
 +++
 
-## PluginDefinitionService
+## PluginLifecycleService
 
-| *SPI Name*       | *Description*   |
-|---------------- |------------ |
-| PluginDefinitionService | Agent plugin definition |
+### Fully-qualified class name
 
-| *Implementation Class*       |        *Description*       |
-|-------------------------------- |----------------------- |
-| PrometheusPluginDefinitionService | Prometheus plugin     |
-| BaseLoggingPluginDefinitionService | Logging plugin  |
-| JaegerPluginDefinitionService    | Jaeger plugin |
-| OpenTelemetryTracingPluginDefinitionService    | OpenTelemetryTracing plugin |
-| OpenTracingPluginDefinitionService    | OpenTracing plugin |
-| ZipkinPluginDefinitionService    | Zipkin plugin |
+[`org.apache.shardingsphere.agent.spi.PluginLifecycleService`](https://github.com/apache/shardingsphere/blob/master/agent/api/src/main/java/org/apache/shardingsphere/agent/spi/PluginLifecycleService.java)
 
+### Definition
 
-## PluginBootService
+Plug lifecycle management interface
 
-| *SPI Name*       | *Description*   |
-|---------------- |------------ |
-| PluginBootService | Plugin startup service definition |
+### Implementation classes
 
-| *Implementation Class*          | *Description*   |
-|-------------------------------- |---------------- |
-| PrometheusPluginBootService | Prometheus plugin startup class |
-| BaseLoggingPluginBootService | Logging plugin startup class   |
-| JaegerTracingPluginBootService | Jaeger plugin startup class  |
-| OpenTelemetryTracingPluginBootService | OpenTelemetryTracing plugin startup class |
-| OpenTracingPluginBootService | OpenTracing plugin startup class  |
-| ZipkinTracingPluginBootService | Zipkin plugin startup class |
+| *Configuration Type* | *Description*                                        | *Fully-qualified class name*                                                                                                                                                                                                                                                                                                          |
+|----------------------|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| File                 | Logging plug lifecycle management class              | [`org.apache.shardingsphere.agent.plugin.logging.file.FileLoggingPluginLifecycleService`](https://github.com/apache/shardingsphere/blob/master/agent/plugins/logging/type/file/src/main/java/org/apache/shardingsphere/agent/plugin/logging/file/FileLoggingPluginLifecycleService.java)                                              |
+| Prometheus           | Prometheus plug lifecycle management class           | [`org.apache.shardingsphere.agent.plugin.metrics.prometheus.PrometheusPluginLifecycleService`](https://github.com/apache/shardingsphere/blob/master/agent/plugins/metrics/type/prometheus/src/main/java/org/apache/shardingsphere/agent/plugin/metrics/prometheus/PrometheusPluginLifecycleService.java)                              |
+| OpenTelemetry        | OpenTelemetryTracing plug lifecycle management class | [`org.apache.shardingsphere.agent.plugin.tracing.opentelemetry.OpenTelemetryTracingPluginLifecycleService`](https://github.com/apache/shardingsphere/blob/master/agent/plugins/tracing/type/opentelemetry/src/main/java/org/apache/shardingsphere/agent/plugin/tracing/opentelemetry/OpenTelemetryTracingPluginLifecycleService.java) |

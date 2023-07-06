@@ -96,7 +96,7 @@ ShardingSphere-Proxy 的启动方式有三种：二进制包、Docker、Helm，�
 
 ### 1. 将 MySQL 的 JDBC 驱动复制到 ext-lib 包
 
-下载驱动 [mysql-connector-java-5.1.47.jar](https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.47/mysql-connector-java-5.1.47.jar) 或者 [mysql-connector-java-8.0.11.jar](https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.11/mysql-connector-java-8.0.11.jar) 放入 ext-lib 包。因为初始目录中并没有 ext-lib，需要自行创建。
+下载驱动 [mysql-connector-java-5.1.49.jar](https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.49/mysql-connector-java-5.1.49.jar) 或者 [mysql-connector-java-8.0.11.jar](https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.11/mysql-connector-java-8.0.11.jar) 放入 ext-lib 包。因为初始目录中并没有 ext-lib，需要自行创建。
 
 ### 2. 修改 conf/server.yaml 配置文件
 
@@ -106,10 +106,9 @@ server.yaml 配置中默认集群运行模式，这里提供一份单机的运�
 mode:
  type: Standalone # 单机模式
  repository:
-   type: File
+   type: H2
    props:
-     path: /Users/xxx/software/apache-shardingsphere-5.1.0-shardingsphere-proxy/file # 元数据配置等持久化文件路径
- overwrite: false # 是否覆盖已存在的元数据
+     jdbcUrl: jdbc:h2:file:~/config_data # 元数据持久化数据库连接 URL
 
 rules: # 认证信息
  - !AUTHORITY
@@ -135,14 +134,11 @@ props: # 公用配置
  kernel-executor-size: 16  # Infinite by default.
  proxy-frontend-flush-threshold: 128  # The default value is 128.
  proxy-opentracing-enabled: false
- proxy-hint-enabled: false
  sql-show: false
  check-table-metadata-enabled: false
- show-process-list-enabled: false
    # Proxy backend query fetch size. A larger value may increase the memory usage of ShardingSphere Proxy.
    # The default value is -1, which means set the minimum value for different JDBC drivers.
  proxy-backend-query-fetch-size: -1
- check-duplicate-table-enabled: false
  proxy-frontend-executor-size: 0 # Proxy frontend executor size. The default value is 0, which means let Netty decide.
    # Available options of proxy backend executor suitable: OLAP(default), OLTP. The OLTP option may reduce time cost of writing packets to client, but it may increase the latency of SQL execution
    # and block other clients if client connections are more than `proxy-frontend-executor-size`, especially executing slow SQL.

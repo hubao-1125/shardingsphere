@@ -1,29 +1,24 @@
 +++
-pre = "<b>6.8. </b>"
+pre = "<b>5.8. </b>"
 title = "读写分离"
 weight = 8
 chapter = true
 +++
 
-## ReadwriteSplittingType
+## ReadQueryLoadBalanceAlgorithm
 
-| *SPI 名称*                                 | *详细说明*              |
-| ----------------------------------------- | ----------------------- |
-| ReadwriteSplittingType                    | 读写分离类型              |
+### 全限定类名
 
-| *已知实现类*                               | *详细说明*               |
-| ----------------------------------------- | ----------------------- |
-| StaticReadwriteSplittingType              | 静态读写分离类型          |
-| DynamicReadwriteSplittingType             | 动态读写分离类型          |
+[`org.apache.shardingsphere.readwritesplitting.spi.ReadQueryLoadBalanceAlgorithm`](https://github.com/apache/shardingsphere/blob/master/features/readwrite-splitting/api/src/main/java/org/apache/shardingsphere/readwritesplitting/spi/ReadQueryLoadBalanceAlgorithm.java)
 
-## ReplicaLoadBalanceAlgorithm
+### 定义
 
-| *SPI 名称*                                 | *详细说明*              |
-| ----------------------------------------- | ----------------------- |
-| ReplicaLoadBalanceAlgorithm               | 读库负载均衡算法          |
+读库负载均衡算法
 
-| *已知实现类*                               | *详细说明*               |
-| ----------------------------------------- | ----------------------- |
-| RoundRobinReplicaLoadBalanceAlgorithm     | 基于轮询的读库负载均衡算法 |
-| RandomReplicaLoadBalanceAlgorithm         | 基于随机的读库负载均衡算法 |
-| WeightReplicaLoadBalanceAlgorithm         | 基于权重的读库负载均衡算法 |
+### 已知实现
+
+| *配置标识*      | *详细说明*        | *全限定类名*                                                                                                                                                                                                                                                                                                                              |
+|-------------|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ROUND_ROBIN | 基于轮询的读库负载均衡算法 | [`org.apache.shardingsphere.readwritesplitting.algorithm.loadbalance.RoundRobinReadQueryLoadBalanceAlgorithm`](https://github.com/apache/shardingsphere/blob/master/features/readwrite-splitting/core/src/main/java/org/apache/shardingsphere/readwritesplitting/algorithm/loadbalance/RoundRobinReadQueryLoadBalanceAlgorithm.java) |
+| RANDOM      | 基于随机的读库负载均衡算法 | [`org.apache.shardingsphere.readwritesplitting.algorithm.loadbalance.RandomReadQueryLoadBalanceAlgorithm`](https://github.com/apache/shardingsphere/blob/master/features/readwrite-splitting/core/src/main/java/org/apache/shardingsphere/readwritesplitting/algorithm/loadbalance/RandomReadQueryLoadBalanceAlgorithm.java)         |
+| WEIGHT      | 基于权重的读库负载均衡算法 | [`org.apache.shardingsphere.readwritesplitting.algorithm.loadbalance.WeightReadQueryLoadBalanceAlgorithm`](https://github.com/apache/shardingsphere/blob/master/features/readwrite-splitting/core/src/main/java/org/apache/shardingsphere/readwritesplitting/algorithm/loadbalance/WeightReadQueryLoadBalanceAlgorithm.java)         |

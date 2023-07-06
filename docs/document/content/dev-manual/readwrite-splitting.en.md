@@ -1,29 +1,24 @@
 +++
-pre = "<b>6.8. </b>"
+pre = "<b>5.8. </b>"
 title = "Readwrite-splitting"
 weight = 8
 chapter = true
 +++
 
-## ReadwriteSplittingType
+## ReadQueryLoadBalanceAlgorithm
 
-| *SPI Name*                                 | *Description*                 |
-| ----------------------------------------- | ------------------------- |
-| ReadwriteSplittingType                    | Readwrite-splitting type  |
+### Fully-qualified class name
 
-| *Implementation Class*                               | *Description*                         |
-| ----------------------------------------- | -------------------------------- |
-| StaticReadwriteSplittingType              | Static readwrite-splitting type  |
-| DynamicReadwriteSplittingType             | Dynamic readwrite-splitting type |
+[`org.apache.shardingsphere.readwritesplitting.spi.ReadQueryLoadBalanceAlgorithm`](https://github.com/apache/shardingsphere/blob/master/features/readwrite-splitting/api/src/main/java/org/apache/shardingsphere/readwritesplitting/spi/ReadQueryLoadBalanceAlgorithm.java)
 
-## ReplicaLoadBalanceAlgorithm
+### Definition
 
-| *SPI Name*                            | *Description*                                           |
-| ------------------------------------- | ------------------------------------------------------- |
-| ReplicaLoadBalanceAlgorithm           | Load balance algorithm of replica databases             |
+Read query load balance algorithm's definition
 
-| *Implementation Class*                | *Description*                                           |
-| ------------------------------------- | ------------------------------------------------------- |
-| RoundRobinReplicaLoadBalanceAlgorithm | Round robin load balance algorithm of replica databases |
-| RandomReplicaLoadBalanceAlgorithm     | Random load balance algorithm of replica databases      |
-| WeightReplicaLoadBalanceAlgorithm     | Weight load balance algorithm of replica databases      |
+### Implementation classes
+
+| *Configuration Type* | *Description*                                              | *Fully-qualified class name*                                                                                                                                                                                                                                                                                                         |
+|----------------------|------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ROUND_ROBIN          | the read database load balancer algorithm based on polling | [`org.apache.shardingsphere.readwritesplitting.algorithm.loadbalance.RoundRobinReadQueryLoadBalanceAlgorithm`](https://github.com/apache/shardingsphere/blob/master/features/readwrite-splitting/core/src/main/java/org/apache/shardingsphere/readwritesplitting/algorithm/loadbalance/RoundRobinReadQueryLoadBalanceAlgorithm.java) |
+| RANDOM               | the read database load balancer algorithm based on random  | [`org.apache.shardingsphere.readwritesplitting.algorithm.loadbalance.RandomReadQueryLoadBalanceAlgorithm`](https://github.com/apache/shardingsphere/blob/master/features/readwrite-splitting/core/src/main/java/org/apache/shardingsphere/readwritesplitting/algorithm/loadbalance/RandomReadQueryLoadBalanceAlgorithm.java)         |
+| WEIGHT               | the read database load balancer algorithm based on weight  | [`org.apache.shardingsphere.readwritesplitting.algorithm.loadbalance.WeightReadQueryLoadBalanceAlgorithm`](https://github.com/apache/shardingsphere/blob/master/features/readwrite-splitting/core/src/main/java/org/apache/shardingsphere/readwritesplitting/algorithm/loadbalance/WeightReadQueryLoadBalanceAlgorithm.java)         |

@@ -13,22 +13,24 @@ chapter = true
 
 ## 谁在使用 ShardingSphere?
 
-共计 209 家公司。
+共计 225 家公司。
 
 ### 基础软件
 <ul>
     <li><a href="http://www.sphere-ex.com/" rel="nofollow">SphereEx</a></li>
     <li><a href="https://www.opengauss.org/zh/" rel="nofollow">华为 openGauss</a>：<a href="https://mp.weixin.qq.com/s/r7OfiuL2zqES66Y2r00nAw" rel="nofollow">用户案例</a></li>
     <li><a href="https://www.mogdb.io/" rel="nofollow">云和恩墨 MogDB</a>：<a href="https://mp.weixin.qq.com/s/x25xPc352tt0i7E2YtsqIA" rel="nofollow">用户案例</a></li>
+    <li><a href="https://www.kingbase.com.cn/" rel="nofollow">人大金仓 KingbaseES</a></li>
 </ul>
 
 ### 银行
 <ul>
-    <li><a href="https://www.abchina.com/" rel="nofollow">中国农业银行</a></li>
+    <li><a href="https://www.abchina.com/" rel="nofollow">中国农业银行</a>：<a href="https://mp.weixin.qq.com/s/08F3qaDs-f8lhTJAUlO5ug" rel="nofollow">用户案例</a></li>
     <li><a href="https://www.ccbft.com/" rel="nofollow">建信金融科技</a></li>
-    <li><a href="http://www.cmbc.com.cn/" rel="nofollow">中国民生银行股份有限公司</a></li>
+    <li><a href="http://www.cmbc.com.cn/" rel="nofollow">中国民生银行股份有限公司</a>：<a href="https://mp.weixin.qq.com/s/-XfGY9hgCrP90T8TOKCRdw" rel="nofollow">用户案例</a></li>
     <li><a href="https://bank.pingan.com/" rel="nofollow">平安银行</a></li>
     <li><a href="https://www.psbc.com/cn/" rel="nofollow">中国邮政储蓄银行</a></li>
+    <li><a href="https://www.cmbchina.com/" rel="nofollow">招商银行</a></li>
 </ul>
 
 ### 支付
@@ -40,13 +42,14 @@ chapter = true
 
 ### 电信
 <ul>
+    <li>联通数科：<a href="https://mp.weixin.qq.com/s/b8roYMxVnW_8jbj6KocNGw" rel="nofollow">用户案例</a></li>
     <li><a href="https://jf.10086.cn/" rel="nofollow">中移动金融科技</a></li>
-    <li><a href="https://www.cucloud.cn/" rel="nofollow">联通云</a></li>
 </ul>
 
 ### 金融科技
 <ul>
     <li><a href="http://jr.jd.com/" rel="nofollow">京东金融</a>：<a href="https://mp.weixin.qq.com/s/Rzr-aKFwmm71QNUs68WQNA" rel="nofollow">用户案例</a></li>
+    <li><a href="https://tech.pingan.com/" rel="nofollow">平安科技</a></li>
     <li><a href="http://www.sunline.cn/" rel="nofollow">长亮科技</a></li>
     <li><a href="https://www.360jinrong.net/" rel="nofollow">360数科</a></li>
     <li><a href="https://www.msxf.com/" rel="nofollow">马上金融</a></li>
@@ -57,7 +60,6 @@ chapter = true
     <li><a href="https://www.niiwoo.com/" rel="nofollow">你我金融</a></li>
     <li><a href="https://www.51credit.com/" rel="nofollow">我爱卡</a></li>
     <li><a href="http://www.tuandai.com/" rel="nofollow">团贷网</a></li>
-    <li><a href="https://www.cypfintech.com/" rel="nofollow">策赢平台</a></li>
     <li><a href="https://www.ktjr.com/" rel="nofollow">开通金融</a></li>
     <li><a href="https://www.tansun.com/" rel="nofollow">天阳宏业</a></li>
     <li><a href="https://www.airstar.com/" rel="nofollow">天星金融</a></li>
@@ -67,11 +69,10 @@ chapter = true
 <ul>
     <li><a href="http://www.dangdang.com/" rel="nofollow">当当</a>：<a href="https://mp.weixin.qq.com/s/Dcs_2Mkdvd49_s40rlOHvw" rel="nofollow">用户案例</a></li>
     <li><a href="https://www.zhuanzhuan.com/" rel="nofollow">转转</a>：<a href="https://mp.weixin.qq.com/s/WftCu5oD4TZ-Xcf4uELtKA" rel="nofollow">用户案例</a></li>
-    <li><a href="https://www.dewu.com/" rel="nofollow">得物</a>：<a href="https://mp.weixin.qq.com/s/mYWKF0Ipso4GqSLmF4C3tg" rel="nofollow">用户案例</a></li>
+    <li><a href="https://www.dewu.com/" rel="nofollow">得物</a>：<a href="https://mp.weixin.qq.com/s/mYWKF0Ipso4GqSLmF4C3tg" rel="nofollow">用户案例 1</a> & <a href="https://mp.weixin.qq.com/s/ZyMBRJqbDQWYxjqlGAquKQ" rel="nofollow">用户案例 2</a></li>
     <li><a href="http://game.163.com/" rel="nofollow">网易游戏</a></li>
     <li><a href="https://www.vip.com/" rel="nofollow">唯品会</a></li>
     <li><a href="https://www.joybuy.com/" rel="nofollow">京东商城海外站</a></li>
-    <li><a href="https://www.jd.ru/" rel="nofollow">京东商城俄文站</a></li>
     <li><a href="https://www.wandougongzhu.cn" rel="nofollow">豌豆公主</a></li>
     <li><a href="https://www.missfresh.cn/" rel="nofollow">每日优鲜</a></li>
     <li><a href="http://www.ucreater.com/" rel="nofollow">由创科技</a></li>
@@ -84,7 +85,6 @@ chapter = true
     <li><a href="http://www.heilan.com.cn/" rel="nofollow">海澜集团</a></li>
     <li><a href="http://www.pagoda.com.cn/" rel="nofollow">百果园</a></li>
     <li><a href="https://www.dayi35.com/" rel="nofollow">大易有塑</a></li>
-    <li><a href="https://www.xiaohongchun.com/" rel="nofollow">小红唇</a></li>
     <li><a href="https://www.yiwugou.com/" rel="nofollow">义乌购</a></li>
     <li><a href="http://www.eeka.cn/" rel="nofollow">赢家服饰</a></li>
     <li><a href="http://cs.maifang.com/" rel="nofollow">秒卖房</a></li>
@@ -96,6 +96,9 @@ chapter = true
     <li><a href="https://www.sourcingarts.com/" rel="nofollow">SourcingArts</a></li>
     <li><a href="https://www.danchuangglobal.com/" rel="nofollow">浙江单创品牌管理有限公司</a></li>
     <li><a href="https://jossney.com/" rel="nofollow">Jossney</a></li>
+    <li><a href="https://www.belleintl.com/" rel="nofollow">百丽时尚</a></li>
+    <li><a href="https://store.kinnls.com/" rel="nofollow">KINNLS</a></li>
+    <li><a href="https://www.zhidemai.com" rel="nofollow">值得买</a></li>
 </ul>
 
 ### 数字化与云服务
@@ -106,11 +109,9 @@ chapter = true
     <li><a href="https://aifanfan.baidu.com/" rel="nofollow">百度爱番番</a></li>
     <li><a href="https://www.tuya.com/cn" rel="nofollow">涂鸦</a></li>
     <li><a href="https://www.advancegroup.com.cn/" rel="nofollow">领创集团</a>：<a href="https://mp.weixin.qq.com/s/4iSewGT6-bOmDH56ukyBsQ" rel="nofollow">用户案例</a></li>
-    <li><a href="http://www.zhenxinsafe.com/" rel="nofollow">真信认知科技</a></li>
     <li><a href="http://www.cloudansys.com/" rel="nofollow">云庐科技</a></li>
     <li><a href="http://www.compasshz.com/" rel="nofollow">康帕斯科技</a></li>
     <li><a href="http://www.cyberplus.com.cn/" rel="nofollow">新脉远望</a></li>
-    <li><a href="http://caas.com.cn/" rel="nofollow">千丁</a></li>
     <li><a href="https://www.shebaotong.com/" rel="nofollow">社宝通</a></li>
     <li><a href="http://www.dtchuxing.com/" rel="nofollow">公交云</a></li>
     <li><a href="http://www.ushareit.com/" rel="nofollow">茄子快传</a></li>
@@ -125,6 +126,9 @@ chapter = true
     <li><a href="https://www.teddymobile.cn/" rel="nofollow">泰迪熊移动</a></li>
     <li><a href="https://www.ecopiatech.com/" rel="nofollow">Ecopia</a></li>
     <li><a href="https://xiaoman.cn/" rel="nofollow">小满科技</a></li>
+    <li><a href="https://www.wegooooo.com/" rel="nofollow">微购科技</a></li>
+    <li><a href="https://www.lingxing.com/" rel="nofollow">领星</a></li>
+    <li><a href="http://sz.aisino.com/" rel="nofollow">深圳航天信息</a></li>
 </ul>
 
 ### 出行
@@ -155,6 +159,8 @@ chapter = true
     <li><a href="https://www.keking.com" rel="nofollow">凯京科技</a></li>
     <li><a href="http://www.c-wms.net/" rel="nofollow">弘人网络科技</a></li>
     <li><a href="http://www.xbnwl.com/" rel="nofollow">喜百年供应链科技</a></li>
+    <li><a href="https://www.nti56.com/" rel="nofollow">今天国际</a></li>
+    <li><a href="https://www.inja.com" rel="nofollow">云南建投物流有限公司</a></li>
 </ul>
 
 ### 旅游服务
@@ -163,7 +169,6 @@ chapter = true
     <li><a href="https://www.mafengwo.cn/" rel="nofollow">马蜂窝</a></li>
     <li><a href="https://www.tujia.com/" rel="nofollow">途家民宿</a></li>
     <li><a href="https://www.fotoplace.cc/" rel="nofollow">足记</a></li>
-    <li><a href="https://travelingpin.com" rel="nofollow">travelingpin</a></li>
     <li><a href="http://www.yaduo.com/" rel="nofollow">亚朵</a></li>
 </ul>
 
@@ -175,18 +180,23 @@ chapter = true
     <li><a href="https://www.iqiyi.com/" rel="nofollow">爱奇艺</a></li>
     <li><a href="https://www.yy.com/" rel="nofollow">欢聚时代(YY)</a></li>
     <li><a href="https://www.douyu.com/" rel="nofollow">斗鱼</a></li>
-    <li><a href="https://www.soulapp.cn/" rel="nofollow">Soul App</a></li>
     <li><a href="https://www.bbgameonline.com/" rel="nofollow">BBGame</a></li>
     <li><a href="https://www.elelive.net/" rel="nofollow">小象直播</a></li>
     <li><a href="http://read.zhulang.com/" rel="nofollow">连尚文学</a></li>
+    <li><a href="http://www.dayang.com.cn" rel="nofollow">中科大洋</a></li>
+</ul>
+
+### 社交
+
+<ul>
+    <li><a href="https://www.soulapp.cn/" rel="nofollow">Soul App</a></li>
+    <li><a href="http://www.tuodan666.com" rel="nofollow">深圳加速脱单科技有限公司</a></li>
 </ul>
 
 ### 互联网教育
 <ul>
     <li><a href="http://www.100tal.com/" rel="nofollow">好未来</a></li>
     <li><a href="http://www.hqwx.com/" rel="nofollow">环球网校</a></li>
-    <li><a href="https://www.kaike.la/" rel="nofollow">开课啦</a></li>
-    <li><a href="https://www.okayzhihui.com/" rel="nofollow">点石经纬</a></li>
     <li><a href="http://edu.dongao.com/" rel="nofollow">东奥教育集团</a></li>
     <li><a href="https://magicears.com.cn/" rel="nofollow">魔力耳朵</a></li>
     <li><a href="https://www.duia.com/" rel="nofollow">对啊网</a></li>
@@ -207,8 +217,8 @@ chapter = true
 
 ### 新闻资讯
 <ul>
-    <li><a href="https://ss.sohu.com/" rel="nofollow">搜狐新闻</a></li>
-    <li><a href="https://www.tianya.cn/" rel="nofollow">天涯社区</a></li>
+    <li><a href="http://www.people.com.cn/" rel="nofollow">人民网</a></li>
+    <li><a href="http://news.sohu.com/" rel="nofollow">搜狐新闻</a></li>
     <li><a href="https://www.autohome.com.cn/" rel="nofollow">汽车之家</a></li>
     <li><a href="https://auto.ifeng.com/" rel="nofollow">凤凰汽车</a></li>
     <li><a href="https://500px.me/" rel="nofollow">视觉中国</a></li>
@@ -251,7 +261,6 @@ chapter = true
 <ul>
     <li><a href="https://www.hikvision.com/" rel="nofollow">海康威视</a></li>
     <li><a href="http://www.iotlead.com/" rel="nofollow">思创理德</a></li>
-    <li><a href="http://tcslwxwl.cn.b2b168.com/" rel="nofollow">神州商龙科技股份有限公司</a></li>
     <li><a href="https://sunwuu.com/" rel="nofollow">商物云</a></li>
 </ul>
 
@@ -291,6 +300,7 @@ chapter = true
     <li><a href="http://www.hzsun.com" rel="nofollow">正元智慧</a></li>
     <li><a href="https://www.ywwl.com/" rel="nofollow">遥望网络</a></li>
     <li><a href="http://www.le7soft.com/" rel="nofollow">乐奇软件</a></li>
+    <li><a href="http://www.hylink.net.cn/" rel="nofollow">深圳市海邻科信息技术有限公司</a></li>
 </ul>
 
 ### 医疗与健康

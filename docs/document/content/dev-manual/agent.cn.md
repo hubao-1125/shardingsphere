@@ -1,37 +1,24 @@
 +++
-pre = "<b>6.15. </b>"
+pre = "<b>5.14. </b>"
 title = "可观察性"
-weight = 15
+weight = 14
 chapter = true
 +++
 
-## PluginDefinitionService
+## PluginLifecycleService
 
-| *SPI 名称*       | *详细说明*   |
-|---------------- |------------ |
-| PluginDefinitionService | Agent 插件定义 |
+### 全限定类名
 
-| *已知实现类*                      | *详细说明*              |
-|-------------------------------- |----------------------- |
-| PrometheusPluginDefinitionService | Prometheus plugin     |
-| BaseLoggingPluginDefinitionService | Logging plugin  |
-| JaegerPluginDefinitionService    | Jaeger plugin |
-| OpenTelemetryTracingPluginDefinitionService    | OpenTelemetryTracing plugin |
-| OpenTracingPluginDefinitionService    | OpenTracing plugin |
-| ZipkinPluginDefinitionService    | Zipkin plugin |
+[`org.apache.shardingsphere.agent.spi.PluginLifecycleService`](https://github.com/apache/shardingsphere/blob/master/agent/api/src/main/java/org/apache/shardingsphere/agent/spi/PluginLifecycleService.java)
 
+### 定义
 
-## PluginBootService
+插件生命周期管理接口
 
-| *SPI 名称*       | *详细说明*   |
-|---------------- |------------ |
-| PluginBootService | 插件启动服务定义 |
+### 已知实现
 
-| *已知实现类*                      | *详细说明*              |
-|-------------------------------- |----------------------- |
-| PrometheusPluginBootService | Prometheus plugin 启动类 |
-| BaseLoggingPluginBootService | Logging plugin 启动类   |
-| JaegerTracingPluginBootService | Jaeger plugin 启动类  |
-| OpenTelemetryTracingPluginBootService | OpenTelemetryTracing plugin 启动类 |
-| OpenTracingPluginBootService | OpenTracing plugin 启动类  |
-| ZipkinTracingPluginBootService | Zipkin plugin 启动类 |
+| *配置标识*        | *详细说明*                  | *全限定类名*                                                                                                                                                                                                                                                                                                                               |
+|---------------|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| File          | File 插件生命周期管理类          | [`org.apache.shardingsphere.agent.plugin.logging.file.FileLoggingPluginLifecycleService`](https://github.com/apache/shardingsphere/blob/master/agent/plugins/logging/type/file/src/main/java/org/apache/shardingsphere/agent/plugin/logging/file/FileLoggingPluginLifecycleService.java)                                              |
+| Prometheus    | Prometheus 插件生命周期管理类    | [`org.apache.shardingsphere.agent.plugin.metrics.prometheus.PrometheusPluginLifecycleService`](https://github.com/apache/shardingsphere/blob/master/agent/plugins/metrics/type/prometheus/src/main/java/org/apache/shardingsphere/agent/plugin/metrics/prometheus/PrometheusPluginLifecycleService.java)                              |
+| OpenTelemetry | OpenTelemetry 插件生命周期管理类 | [`org.apache.shardingsphere.agent.plugin.tracing.opentelemetry.OpenTelemetryTracingPluginLifecycleService`](https://github.com/apache/shardingsphere/blob/master/agent/plugins/tracing/type/opentelemetry/src/main/java/org/apache/shardingsphere/agent/plugin/tracing/opentelemetry/OpenTelemetryTracingPluginLifecycleService.java) |
